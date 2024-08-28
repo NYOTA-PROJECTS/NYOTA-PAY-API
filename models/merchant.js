@@ -11,12 +11,19 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      this.belongsTo(models.Category, { foreignKey: 'categoryId' });
+      this.belongsTo(models.Category, { foreignKey: 'categoryId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.hasMany(models.MerchantAdmin, { foreignKey: 'merchantId', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
     }
   }
   Merchant.init({
     categoryId: DataTypes.INTEGER,
-    name: DataTypes.STRING,
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     photo: DataTypes.STRING
   }, {
     sequelize,
