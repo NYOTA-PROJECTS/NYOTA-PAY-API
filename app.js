@@ -8,6 +8,8 @@ const fs = require("fs");
 const admin = require("firebase-admin");
 const permissionsPolicy = require("permissions-policy");
 const serviceAccount = require("./utils/firebase.json");
+const adminRoutes = require("./routes/adminRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 
 // Init express app
 const app = express();
@@ -65,6 +67,8 @@ app.use(
 );
 
 // Routes
+app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/category", categoryRoutes);
 
 // Export app
 const port = process.env.PORT || 3000;

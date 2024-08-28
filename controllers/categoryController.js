@@ -37,6 +37,7 @@ const getAll = async (req, res) => {
   try {
     const categories = await Category.findAll({
       attributes: ["id", "name"],
+      order: [["name", "ASC"]],
     });
     return res.status(200).json({
       status: "success",
