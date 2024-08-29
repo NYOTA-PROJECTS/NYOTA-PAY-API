@@ -104,3 +104,61 @@
 - **Header**:
     - `Authorization` (string): Token Bearer de l'admin.
     - `merchantid` (string): Identifiant du marchant.
+
+
+## UTILISATEURS
+
+### CRÉATION DU COMPTE UTILISATEUR
+- **URL**: `/api/v1/worker/create`
+- **Méthode**: `POST`
+- **Description**: Création du compte utilisateur.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `name` (string): Nom de l'utilisateur.
+    - `phone` (string): Numéro de telephone de l'utilisateur.
+    - `password` (string): Mot de passe de l'utilisateur(minimum 4 charactères).
+
+### SUPPRESSION D'UN UTILISATEUR
+- **URL**: `/api/v1/worker/delete`
+- **Méthode**: `DELETE`
+- **Description**: Suppréssion d'un utilisateur.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `workerId` (string): Identifiant de l'utilisateur.
+
+### DESACTIVATION D'UN COMPTE UTILISATEUR
+- **URL**: `/api/v1/worker/disable-account`
+- **Méthode**: `PUT`
+- **Description**: Désactivation d'un compte utilisateur.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `workerId` (string): Identifiant de l'utilisateur.
+
+### ACTIVCATION D'UN COMPTE UTILISATEUR
+- **URL**: `/api/v1/worker/activate-account`
+- **Méthode**: `PUT`
+- **Description**: Activation d'un compte utilisateur.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `workerId` (string): Identifiant de l'utilisateur.
+
+### MISE À JOUR MOT DE PASSE D'UN UTILISATEUR
+- **URL**: `/api/v1/worker/update-password`
+- **Méthode**: `PUT`
+- **Description**: Mise à jours du mot de passe d'un utilisateur.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `workerId` (string): Identifiant de l'utilisateur.
+    - `password` (string): Le nouveau mot de passe de l'utilisateur.
+
+### LISTE DE TOUS LES UTILISATEURS
+- **URL**: `/api/v1/worker/all`
+- **Méthode**: `GET`
+- **Description**: Mise à jours du mot de passe d'un utilisateur.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.

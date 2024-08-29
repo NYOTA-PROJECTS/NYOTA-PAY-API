@@ -11,6 +11,15 @@ const list = async (req, res) => {
                 message: "L'identifiant du marchand est requis.",
             });
         }
+
+        const merchant = await Merchant.findOne({ where: { id: merchantId } });
+        if (!merchant) {
+            return res.status(400).json({
+                status: "error",
+                message: "Le compte du marchand n'existe pas.",
+            });
+        }
+        
         const merchantPointOfSell = await MerchantPointOfSell.findAll({
             where: {merchantId: merchantId },
             attributes: ["id", "urlLink"],
