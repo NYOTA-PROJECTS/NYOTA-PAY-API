@@ -10,6 +10,7 @@ const permissionsPolicy = require("permissions-policy");
 const serviceAccount = require("./utils/firebase.json");
 const adminRoutes = require("./routes/adminRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const merchantRoutes = require("./routes/merchantRoutes");
 
 // Init express app
 const app = express();
@@ -31,7 +32,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Middleware to create the destination folder for public
-const createUploadsProfileFolder = (req, res, next) => {
+const createUploadsMerchantFolder = (req, res, next) => {
   const folderPath = "public/merchants";
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath, { recursive: true });
@@ -69,6 +70,7 @@ app.use(
 // Routes
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/category", categoryRoutes);
+app.use("/api/v1/merchant", createUploadsMerchantFolder, merchantRoutes);
 
 // Export app
 const port = process.env.PORT || 3000;
