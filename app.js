@@ -12,6 +12,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const merchantRoutes = require("./routes/merchantRoutes");
 const cashregisterRoutes = require("./routes/cashregisterRoutes");
+const pointofsellRoutes = require("./routes/pointofsellRoutes");
 
 // Init express app
 const app = express();
@@ -73,6 +74,7 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/merchant", createUploadsMerchantFolder, merchantRoutes);
 app.use("/api/v1/cashregister", cashregisterRoutes);
+app.use("/api/v1/pointofsell", pointofsellRoutes);
 
 // Export app
 const port = process.env.PORT || 3000;

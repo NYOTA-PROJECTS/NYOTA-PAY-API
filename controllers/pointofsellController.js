@@ -5,15 +5,15 @@ const { appendErrorLog } = require("../utils/logging");
 const list = async (req, res) => {
     try {
         const merchantId = req.headers.merchantid;
+        if (!merchantId) {
+            return res.status(400).json({
+                status: "error",
+                message: "L'identifiant du marchand est requis.",
+            });
+        }
         const merchantPointOfSell = await MerchantPointOfSell.findAll({
-            where: { merchantId },
+            where: {merchantId: merchantId },
             attributes: ["id", "urlLink"],
-            include: [
-                {
-                    model: Merchant,
-                    attributes: ["id", "name"],
-                },
-            ],
             order: [["urlLink", "ASC"]],
         });
 
@@ -24,9 +24,16 @@ const list = async (req, res) => {
             });
         }
 
+        const response = merchantPointOfSell.map((merchantPointOfSell) => {
+            return {
+                id: merchantPointOfSell.id,
+                name: merchantPointOfSell.urlLink,
+            };
+        });
+
         return res.status(200).json({
             status: "success",
-            data: merchantPointOfSell,
+            data: response,
         });
     } catch (error) {
         console.error(`ERROR LISTING POINT OF SELL: ${error}`);
