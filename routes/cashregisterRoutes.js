@@ -6,4 +6,7 @@ const router = express.Router();
 // CREATE
 router.post("/create", verifyToken, isAdmin, cashregisterController.create);
 
+// DELETE
+router.delete("/delete", verifyToken, isAdmin, cashregisterController.destroy);
+
 module.exports = router;

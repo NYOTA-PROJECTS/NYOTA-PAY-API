@@ -2,7 +2,7 @@ const {
   Merchant,
   MerchantCashRegister,
   MerchantBalance,
-  MerchantPointOfSell
+  MerchantPointOfSell,
 } = require("../models");
 const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -63,7 +63,7 @@ const create = async (req, res) => {
     const merchantposId = await MerchantPointOfSell.findOne({
       where: { id: posId },
       transaction,
-    })
+    });
 
     if (!merchantposId) {
       return res.status(400).json({
@@ -118,4 +118,41 @@ const create = async (req, res) => {
   }
 };
 
-module.exports = { create };
+const destroy = async (req, res) => {
+  try {
+    const { cashregisterId } = req.body;
+    if (!cashregisterId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant de la caisse est requis.",
+      });
+    }
+
+    const cashregister = await MerchantCashRegister.findByPk(cashregisterId);
+
+    if (!cashregister) {
+      return res.status(400).json({
+        status: "error",
+        message: "La caisse du marchand n'existe pas.",
+      });
+    }
+
+    await MerchantCashRegister.destroy({
+      where: { id: cashregisterId },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "La caisse a été supprimé avec succes!.",
+    });
+  } catch (error) {
+    console.error(`ERROR DELETE CASH REGISTER: ${error}`);
+    appendErrorLog(`ERROR DELETE CASH REGISTER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la création du compte.",
+    });
+  }
+};
+
+module.exports = { create, destroy };
