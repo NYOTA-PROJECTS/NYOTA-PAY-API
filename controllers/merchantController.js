@@ -175,4 +175,18 @@ const updatePhoto = async (req, res) => {
   }
 };
 
-module.exports = { create, updatePhoto };
+const getAllInfos = async (req, res) => {
+    try {
+        //
+        
+    } catch (error) {
+        console.error(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);
+        appendErrorLog(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);
+        return res.status(500).json({
+            status: "error",
+            message: "Une erreur s'est produite lors de la recupération des informations des marchands.",
+        });
+    }
+}
+
+module.exports = { create, updatePhoto, getAllInfos };
