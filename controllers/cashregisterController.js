@@ -1,6 +1,6 @@
 const {
   Merchant,
-  MerchantCashRegister,
+  CashRegister,
   MerchantBalance,
   MerchantPointOfSell,
 } = require("../models");
@@ -91,7 +91,7 @@ const create = async (req, res) => {
       });
     }
 
-    await MerchantCashRegister.create(
+    await CashRegister.create(
       {
         merchantId,
         merchantposId: posId,
@@ -128,7 +128,7 @@ const destroy = async (req, res) => {
       });
     }
 
-    const cashregister = await MerchantCashRegister.findByPk(cashregisterId);
+    const cashregister = await CashRegister.findByPk(cashregisterId);
 
     if (!cashregister) {
       return res.status(400).json({
@@ -137,7 +137,7 @@ const destroy = async (req, res) => {
       });
     }
 
-    await MerchantCashRegister.destroy({
+    await CashRegister.destroy({
       where: { id: cashregisterId },
     });
 

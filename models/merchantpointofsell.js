@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       this.belongsTo(models.Merchant, { foreignKey: 'merchantId', onUpdate: 'CASCADE' });
-      this.hasMany(models.MerchantCashRegister, { foreignKey: 'merchantposId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
+      this.hasMany(models.CashRegister, { foreignKey: 'merchantposId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
     }
   }
   MerchantPointOfSell.init({
