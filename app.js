@@ -11,6 +11,7 @@ const serviceAccount = require("./utils/firebase.json");
 const adminRoutes = require("./routes/adminRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const merchantRoutes = require("./routes/merchantRoutes");
+const cashregisterRoutes = require("./routes/cashregisterRoutes");
 
 // Init express app
 const app = express();
@@ -71,6 +72,7 @@ app.use(
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/merchant", createUploadsMerchantFolder, merchantRoutes);
+app.use("/api/v1/cashregister", cashregisterRoutes);
 
 // Export app
 const port = process.env.PORT || 3000;
