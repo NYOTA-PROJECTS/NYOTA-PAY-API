@@ -55,6 +55,20 @@
 }
 ```
 
+### CRÉATION COMPTE ADMIN DU MARCHANT
+- **URL**: `/api/v1/merchant/create-admin`
+- **Méthode**: `POST`
+- **Description**: Création d'un compte admin marchant.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `merchantId` (string): Identifiant du marchant.
+    - `firstname` (string): Prénom de l'admin du marchant.
+    - `lastname` (string): Nom de l'admin du marchant.
+    - `email` (string): Email de l'admin du marchant.
+    - `phone` (string): Téléphone de l'admin marchant.
+    - `password` (string): Mot de passe de l'admin du marchant.
+
 ### MISE À JOUR DE LA PHOTO DU MARCHANT
 - **URL**: `/api/v1/merchant/update-photo`
 - **Méthode**: `PUT`
