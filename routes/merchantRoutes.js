@@ -13,4 +13,7 @@ router.put("/update-photo", verifyToken, isAdminOrMerchant, upload.single("photo
 // GET ALL INFOS
 router.get("/all-details", verifyToken, isAdminOrMerchant, merchantController.getAllInfos);
 
+// CREATION ADMIN MERCHANT
+router.post("/create-admin", verifyToken, isAdmin, merchantController.createAdmin);
+
 module.exports = router

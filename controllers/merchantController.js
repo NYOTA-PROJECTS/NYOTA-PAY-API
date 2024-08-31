@@ -176,17 +176,106 @@ const updatePhoto = async (req, res) => {
 };
 
 const getAllInfos = async (req, res) => {
-    try {
-        //
-        
-    } catch (error) {
-        console.error(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);
-        appendErrorLog(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);
-        return res.status(500).json({
-            status: "error",
-            message: "Une erreur s'est produite lors de la recupération des informations des marchands.",
-        });
-    }
-}
+  try {
+    //
+  } catch (error) {
+    console.error(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);
+    appendErrorLog(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la recupération des informations des marchands.",
+    });
+  }
+};
 
-module.exports = { create, updatePhoto, getAllInfos };
+const createAdmin = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { merchantId, firstname, lastname, email, phone, password } =
+      req.body;
+
+    if (!firstname) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le prénom est requis.",
+      });
+    }
+
+    if (!lastname) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le nom est requis.",
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'email est requis.",
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le mot de passe est requis.",
+      });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le mot de passe doit avoir minimum 4 charactères.",
+      });
+    }
+
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchant est requis.",
+      });
+    }
+
+    const admin = await MerchantAdmin.findOne(
+      { where: { email, merchantId } },
+      { transaction }
+    );
+    if (!admin) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le marchant n'à pas été trouvé ou n'existe pas.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await MerchantAdmin.create(
+      {
+        merchantId,
+        firstName: firstname,
+        lastName: lastname,
+        email,
+        phone,
+        password: hashedPassword,
+      },
+      { transaction }
+    );
+    await transaction.commit();
+
+    return res.status(201).json({
+      status: "success",
+      message: "le compte admin du marchant a bien été crée aavec succès!.",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error(`ERROR CREATING MERCHANT ADMIN: ${error}`);
+    appendErrorLog(`ERROR CREATING MERCHANT ADMIN: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la création du compte admin du marchand.",
+    });
+  }
+};
+
+module.exports = { create, updatePhoto, getAllInfos, createAdmin };
