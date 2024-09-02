@@ -2,7 +2,7 @@ const {
   Merchant,
   CashRegister,
   MerchantBalance,
-  MerchantPointOfSell,
+  PointOfSale,
 } = require("../models");
 const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -60,7 +60,7 @@ const create = async (req, res) => {
       });
     }
 
-    const merchantposId = await MerchantPointOfSell.findOne({
+    const merchantposId = await PointOfSale.findOne({
       where: { id: posId },
       transaction,
     });

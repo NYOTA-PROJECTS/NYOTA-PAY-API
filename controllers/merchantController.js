@@ -2,9 +2,10 @@ const bcrypt = require("bcrypt");
 const {
   Merchant,
   MerchantAdmin,
-  MerchantPointOfSell,
+  PointOfSale,
   MerchantBalance,
   Category,
+  Worker,
 } = require("../models");
 const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -97,7 +98,7 @@ const create = async (req, res) => {
 
     // 4. Ajout des points de vente
     for (const point of pointsOfSell) {
-      await MerchantPointOfSell.create(
+      await PointOfSale.create(
         {
           merchantId: newMerchant.id,
           urlLink: point.urlLink,
@@ -177,7 +178,39 @@ const updatePhoto = async (req, res) => {
 
 const getAllInfos = async (req, res) => {
   try {
-    //
+    const merchants = await Merchant.findAll({
+      attributes: ["id", "name",],
+      include: [
+        {
+          model: PointOfSale,
+          attributes: ["urlLink"],
+        },
+        {
+          model: MerchantBalance,
+          attributes: ["amount"],
+        },
+        {
+          model: Worker,
+          attributes: ["id", "merchantId", "name", "phone"],
+        },
+      ],
+      order: [["name", "ASC"]],
+    });
+
+    const merchantInfos = merchants.map((merchant) => {
+      return {
+        id: merchant.id,
+        name: merchant.name,
+        pointsOfSell: merchant.PointOfSale,
+        workers: merchant.Worker,
+        balance: merchant.MerchantBalance,
+      };
+    });
+
+    return res.status(200).json({
+      status: "success",
+      data: merchants,
+    });
   } catch (error) {
     console.error(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);
     appendErrorLog(`ERROR GETTING ALL INFOS MERCHANT: ${error}`);

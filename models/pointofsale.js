@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class MerchantPointOfSell extends Model {
+  class PointOfSale extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -15,12 +15,12 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(models.CashRegister, { foreignKey: 'merchantposId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
     }
   }
-  MerchantPointOfSell.init({
+  PointOfSale.init({
     merchantId: DataTypes.INTEGER,
     urlLink: DataTypes.STRING
   }, {
     sequelize,
-    modelName: 'MerchantPointOfSell',
+    modelName: 'PointOfSale',
   });
-  return MerchantPointOfSell;
+  return PointOfSale;
 };
