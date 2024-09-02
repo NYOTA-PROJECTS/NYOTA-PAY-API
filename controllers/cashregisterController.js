@@ -91,6 +91,14 @@ const create = async (req, res) => {
       });
     }
 
+    // Déduire le montant dans le solde du compte du marchand
+    const newBalance = parseFloat(balance.amount) - parseFloat(amount);
+    console.error(`newBalance: ${newBalance}`);
+    await MerchantBalance.update(
+      { amount:  newBalance },
+      { where: { id: merchantId }, transaction }
+    );
+
     await CashRegister.create(
       {
         merchantId,
