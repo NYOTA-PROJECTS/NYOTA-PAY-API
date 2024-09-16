@@ -60,20 +60,16 @@ const create = async (req, res) => {
       });
     }
 
-    const merchantposId = await PointOfSale.findOne({
-      where: { id: posId },
-      transaction,
-    });
-
-    if (!merchantposId) {
-      return res.status(400).json({
-        status: "error",
-        message: "Le point de vente n'existe pas.",
-      });
-    }
-
     // Assure-toi d'avoir accès à la liste des soldes du marchand
     const balance = merchant.MerchantBalances && merchant.MerchantBalances[0];
+
+
+    if (parseFloat(amount) >= parseFloat(merchant.MerchantBalances[0])) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le solde du marchand sera insuffisant pour cette opération.",
+      })
+    }
 
     if (!balance) {
       return res.status(400).json({
@@ -87,7 +83,7 @@ const create = async (req, res) => {
       return res.status(400).json({
         status: "error",
         message:
-          "Le solde minimum ne doit pas être supérieur au solde du compte du marchand.",
+          "Le solde de la caisse ne peut être supérieur à celui du marchand.",
       });
     }
 
@@ -98,6 +94,18 @@ const create = async (req, res) => {
       { amount:  newBalance },
       { where: { id: merchantId }, transaction }
     );
+
+    const cashregister = await CashRegister.findOne({
+      where: { merchantId, merchantposId: posId, name },
+      transaction,
+    });
+
+    if (cashregister) {
+      return res.status(400).json({
+        status: "error",
+        message: "La caisse existe déja.",
+      });
+    }
 
     await CashRegister.create(
       {

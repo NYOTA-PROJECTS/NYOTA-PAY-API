@@ -2,6 +2,9 @@
 ## PORT:`6880`
 
 ## ADMIN
+<details>
+<summary>REQUEST</summary>
+<br>
 
 ### Login
 - **URL**: `/api/v1/admin/login`
@@ -11,7 +14,12 @@
     - `email` (string): Email.
     - `password` (string): Mot de passe.
 
+</details>
+
 ## CATEGORIES
+<details>
+<summary>REQUEST</summary>
+<br>
 
 ### RECUPERATION DES CATÉGORIES
 - **URL**: `/api/v1/category/all`
@@ -20,8 +28,12 @@
 - **Header**:
     - `Authorization` (string): Token Bearer de l'admin.
 
+</details>
 
 ## MARCHANTS
+<details>
+<summary>REQUEST</summary>
+<br>
 
 ### CRÉATION DU COMPTE MARCHANT
 - **URL**: `/api/v1/merchant/create`
@@ -55,6 +67,7 @@
 }
 ```
 
+
 ### CRÉATION COMPTE ADMIN DU MARCHANT
 - **URL**: `/api/v1/merchant/create-admin`
 - **Méthode**: `POST`
@@ -86,7 +99,13 @@
 - **Header**:
     - `Authorization` (string): Token Bearer de l'admin.
 
+</details>
+
 ## CAISSE
+
+<details>
+<summary>REQUEST</summary>
+<br>
 
 ### CRÉATION D'UNE CAISSE
 - **URL**: `/api/v1/cashregister/create`
@@ -109,7 +128,15 @@
 - **Body**:
     - `cashregisterId` (string): Identifiant de la caisser.
 
+</details>
+
+
 ## POINT DE VENTE
+
+<details>
+<summary>REQUEST</summary>
+<br>
+
 
 ### RÉCUPERATION DE LA LISTE DES POINTS DE VENTE
 - **URL**: `/api/v1/pointofsell/list`
@@ -119,8 +146,14 @@
     - `Authorization` (string): Token Bearer de l'admin.
     - `merchantid` (string): Identifiant du marchant.
 
+</details>
+
 
 ## UTILISATEURS
+
+<details>
+<summary>REQUEST</summary>
+<br>
 
 ### CRÉATION DU COMPTE UTILISATEUR
 - **URL**: `/api/v1/worker/create`
@@ -176,3 +209,5 @@
 - **Description**: Mise à jours du mot de passe d'un utilisateur.
 - **Header**:
     - `Authorization` (string): Token Bearer de l'admin.
+
+</details>
