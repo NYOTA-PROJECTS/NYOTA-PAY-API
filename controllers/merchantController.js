@@ -14,7 +14,7 @@ const create = async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const { name, categoryId, photo, admins, pointsOfSell } = req.body;
+    const { name, categoryId, admins, pointsOfSell } = req.body;
     const host = req.get("host");
     //const picture = req.file;
 
@@ -55,10 +55,19 @@ const create = async (req, res) => {
       });
     }
 
-    let imageUrl = null;
-    if (req.file) {
-      const fileUrl = `merchants/${req.file.filename}`;
-      imageUrl = `${req.protocol}://${host}/${fileUrl}`;
+    // Récupérer les fichiers téléchargés
+    let photoUrl = null;
+    let coverUrl = null;
+
+    if (req.files) {
+      if (req.files['photo']) {
+        const photoFile = req.files['photo'][0];
+        photoUrl = `${req.protocol}://${host}/merchants/${photoFile.filename}`;
+      }
+      if (req.files['cover']) {
+        const coverFile = req.files['cover'][0];
+        coverUrl = `${req.protocol}://${host}/merchants/${coverFile.filename}`;
+      }
     }
 
     // 1. Création du marchand
@@ -66,7 +75,8 @@ const create = async (req, res) => {
       {
         name,
         categoryId,
-        photo: imageUrl,
+        photo: photoUrl,
+        cover: coverUrl
       },
       { transaction }
     );

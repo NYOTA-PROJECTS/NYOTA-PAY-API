@@ -5,9 +5,9 @@ const upload = require("../utils/merchantMulterConfig");
 const router = express.Router();
 
 // CREATE
-router.post("/create", verifyToken, isAdmin, upload.single("photo"), merchantController.create);
+router.post("/create", verifyToken, isAdmin, upload.fields([{ name: "photo" }, { name: "cover" }]), merchantController.create);
 
-// UPDATE PHOTO
+// UPDATE PHOTO 
 router.put("/update-photo", verifyToken, isAdminOrMerchant, upload.single("photo"), merchantController.updatePhoto);
 
 // GET ALL INFOS

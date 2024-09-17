@@ -28,7 +28,8 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: true,
       },
     },
-    photo: DataTypes.STRING
+    cover: DataTypes.STRING,
+    photo: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Merchant',

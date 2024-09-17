@@ -23,6 +23,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      cover: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       photo: {
         type: Sequelize.STRING,
         allowNull: true
