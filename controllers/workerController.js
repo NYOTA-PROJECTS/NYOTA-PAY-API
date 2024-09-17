@@ -1,3 +1,4 @@
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { Worker, Merchant } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -444,4 +445,66 @@ const activateAccount = async (req, res) => {
   }
 };
 
-module.exports = { create, destroy, updatePassword, disableAccount, activateAccount, getAll };
+const login = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le numéro de portable est requis.",
+      });
+    }
+
+    if (!password) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Le mot de passe est requis." });
+    }
+
+    const worker = await Worker.findOne({ where: { phone } });
+    if (!worker) {
+      return res.status(409).json({
+        status: "error",
+        message: "Compte non enregistrée ou incorrecte. Veuillez réessayer."
+      })
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, worker.password);
+    if (!isPasswordValid) {
+      return res.status(409).json({
+        status: "error",
+        message: "Mot de passe invalide ou incorrect. Veuillez réessayer.",
+      })
+    }
+
+    const token = jwt.sign(
+      {
+        id: admin.id,
+        role: "isWorker",
+      },
+      process.env.JWT_SECRET
+    );
+
+    const dataResponse = {
+      name: worker.name,
+      phone: worker.phone,
+      token: token,
+    }
+
+    return res.status(200).json({
+      status: "success",
+      data: dataResponse,
+    });
+    
+  } catch (error) {
+    console.error(`ERROR LOGIN WORKER: ${error}`);
+    appendErrorLog(`ERROR LOGIN WORKER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la connexion de l'utilisateur.",
+    });
+  }
+}
+
+module.exports = { create, destroy, updatePassword, disableAccount, activateAccount, getAll, login };

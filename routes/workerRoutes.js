@@ -21,4 +21,8 @@ router.put("/activate-account", verifyToken, isAdmin, workerController.activateA
 // GET ALL
 router.get("/all", verifyToken, isAdmin, workerController.getAll);
 
+
+// LOGIN
+router.post("/login", workerController.login);
+
 module.exports = router
