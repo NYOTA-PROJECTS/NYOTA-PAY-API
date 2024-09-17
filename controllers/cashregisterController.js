@@ -40,6 +40,15 @@ const create = async (req, res) => {
       });
     }
 
+    // Vérification de l'existence du point de vente
+    const pointOfSale = await PointOfSale.findOne({ where: { id: posId } });
+    if (!pointOfSale) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le point de vente n'existe pas.",
+      });
+    }
+
     // Récupère le marchand et son solde
     const merchant = await Merchant.findOne({
       where: { id: merchantId },
@@ -63,12 +72,11 @@ const create = async (req, res) => {
     // Assure-toi d'avoir accès à la liste des soldes du marchand
     const balance = merchant.MerchantBalances && merchant.MerchantBalances[0];
 
-
     if (parseFloat(amount) >= parseFloat(merchant.MerchantBalances[0])) {
       return res.status(400).json({
         status: "error",
         message: "Le solde du marchand sera insuffisant pour cette opération.",
-      })
+      });
     }
 
     if (!balance) {
@@ -91,13 +99,12 @@ const create = async (req, res) => {
     const newBalance = parseFloat(balance.amount) - parseFloat(amount);
     console.error(`newBalance: ${newBalance}`);
     await MerchantBalance.update(
-      { amount:  newBalance },
+      { amount: newBalance },
       { where: { id: merchantId }, transaction }
     );
 
     const cashregister = await CashRegister.findOne({
-      where: { merchantId, merchantposId: posId, name },
-      transaction,
+      where: { merchantId, merchantposId: posId, name }
     });
 
     if (cashregister) {
