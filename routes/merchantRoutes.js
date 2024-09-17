@@ -10,6 +10,9 @@ router.post("/create", verifyToken, isAdmin, upload.fields([{ name: "photo" }, {
 // UPDATE PHOTO 
 router.put("/update-photo", verifyToken, isAdminOrMerchant, upload.single("photo"), merchantController.updatePhoto);
 
+// UPDATE COVER
+router.put("/update-cover", verifyToken, isAdminOrMerchant, upload.single("cover"), merchantController.updateCover);
+
 // GET ALL INFOS
 router.get("/all-details", verifyToken, isAdminOrMerchant, merchantController.getAllInfos);
 

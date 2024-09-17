@@ -185,6 +185,55 @@ const updatePhoto = async (req, res) => {
     });
   }
 };
+const updateCover = async (req, res) => {
+  try {
+    const { merchantId } = req.body;
+    const host = req.get("host");
+    const photo = req.file;
+
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    if (!photo) {
+      return res.status(400).json({
+        status: "error",
+        message: "La photo du marchand est requise.",
+      });
+    }
+
+    const merchant = await Merchant.findOne({ where: { id: merchantId } });
+    if (!merchant) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le compte du marchand n'existe pas.",
+      });
+    }
+
+    let coverUrl = null;
+    if (req.file) {
+      const fileUrl = `merchants/${req.file.filename}`;
+      coverUrl = `${req.protocol}://${host}/${fileUrl}`;
+    }
+
+    await Merchant.update({ cover: coverUrl }, { where: { id: merchantId } });
+    return res.status(200).json({
+      status: "success",
+      message: "La photo de couverture du marchand a été mise à jour avec succès!.",
+    });
+  } catch (error) {
+    console.error(`ERROR UPDATING COVER MERCHANT: ${error}`);
+    appendErrorLog(`ERROR UPDATING COVER MERCHANT: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la mise a jour de la photo de couverture du marchand.",
+    });
+  }
+};
 
 const getAllInfos = async (req, res) => {
   try {
@@ -321,4 +370,4 @@ const createAdmin = async (req, res) => {
   }
 };
 
-module.exports = { create, updatePhoto, getAllInfos, createAdmin };
+module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin };
