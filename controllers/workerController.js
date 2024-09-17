@@ -6,7 +6,7 @@ const { appendErrorLog } = require("../utils/logging");
 const create = async (req, res) => {
   try {
     const token = req.headers.authorization;
-    const { name, phone, password } = req.body;
+    const { merchantId, name, phone, password } = req.body;
     if (!token) {
       return res
         .status(401)
@@ -39,32 +39,11 @@ const create = async (req, res) => {
       });
     }
 
-    // Vérifie si l'en-tête commence par "Bearer "
-    if (!token.startsWith("Bearer ")) {
-      return res.status(401).json({
-        status: "error",
-        message: "Format de token invalide.",
-      });
-    }
-
-    // Extrait le token en supprimant le préfixe "Bearer "
-    const customToken = token.substring(7);
-    let decodedToken;
-
-    try {
-      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
-    } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res
-          .status(401)
-          .json({ status: "error", message: "TokenExpiredError" });
-      }
+    if (!merchantId) {
       return res
-        .status(401)
-        .json({ status: "error", message: "Token invalide." });
+        .status(400)
+        .json({ status: "error", message: "L'ID du marchand est requis." });
     }
-
-    const merchantId = decodedToken.id;
 
     // Vérifier si l'utilisateur existe dans la base de données en utilisant son ID
     const merchant = await Merchant.findByPk(merchantId);
@@ -470,6 +449,13 @@ const login = async (req, res) => {
       })
     }
 
+    if (!worker.isActive) {
+      return res.status(409).json({
+        status: "error",
+        message: "Votre compte est inactif. Veuillez contacter l'administrateur."
+      });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, worker.password);
     if (!isPasswordValid) {
       return res.status(409).json({
@@ -480,7 +466,7 @@ const login = async (req, res) => {
 
     const token = jwt.sign(
       {
-        id: admin.id,
+        id: worker.id,
         role: "isWorker",
       },
       process.env.JWT_SECRET
