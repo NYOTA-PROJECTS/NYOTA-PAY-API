@@ -1,6 +1,6 @@
 const express = require("express");
 const workerController = require("../controllers/workerController");
-const { verifyToken, isAdmin } = require("../middlewares/authMiddleware");
+const { verifyToken, isAdmin, isWorker } = require("../middlewares/authMiddleware");
 const router = express.Router();
 
 // CREATE
@@ -23,5 +23,11 @@ router.get("/all", verifyToken, isAdmin, workerController.getAll);
 
 // LOGIN
 router.post("/login", workerController.login);
+
+// ALL USER CASHREGISTERS
+router.get("/all-cashregisters", verifyToken, isWorker, workerController.getAllCashregisters);
+
+// START SESSION
+router.post("/start-session", verifyToken, isWorker, workerController.startSession);
 
 module.exports = router

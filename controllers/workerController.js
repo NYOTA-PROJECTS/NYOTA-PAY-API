@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { Worker, Merchant } = require("../models");
+const { Worker, Merchant, CashRegister, PointOfSale, WorkerSession } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 
 const create = async (req, res) => {
@@ -445,14 +445,15 @@ const login = async (req, res) => {
     if (!worker) {
       return res.status(409).json({
         status: "error",
-        message: "Compte non enregistrée ou incorrecte. Veuillez réessayer."
-      })
+        message: "Compte non enregistrée ou incorrecte. Veuillez réessayer.",
+      });
     }
 
     if (!worker.isActive) {
       return res.status(409).json({
         status: "error",
-        message: "Votre compte est inactif. Veuillez contacter l'administrateur."
+        message:
+          "Votre compte est inactif. Veuillez contacter l'administrateur.",
       });
     }
 
@@ -461,7 +462,7 @@ const login = async (req, res) => {
       return res.status(409).json({
         status: "error",
         message: "Mot de passe invalide ou incorrect. Veuillez réessayer.",
-      })
+      });
     }
 
     const token = jwt.sign(
@@ -476,21 +477,217 @@ const login = async (req, res) => {
       name: worker.name,
       phone: worker.phone,
       token: token,
-    }
+    };
 
     return res.status(200).json({
       status: "success",
       data: dataResponse,
     });
-    
   } catch (error) {
     console.error(`ERROR LOGIN WORKER: ${error}`);
     appendErrorLog(`ERROR LOGIN WORKER: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la connexion de l'utilisateur.",
+      message:
+        "Une erreur s'est produite lors de la connexion de l'utilisateur.",
     });
   }
-}
+};
 
-module.exports = { create, destroy, updatePassword, disableAccount, activateAccount, getAll, login };
+const getAllCashregisters = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token non fourni." });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const customToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res
+          .status(401)
+          .json({ status: "error", message: "TokenExpiredError" });
+      }
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token invalide." });
+    }
+
+    const workerId = decodedToken.id;
+
+    // Récupérer le worker et vérifier s'il existe
+    const worker = await Worker.findByPk(workerId, {
+      include: {
+        model: Merchant,
+        attributes: ["id", "name"],
+        include: {
+          model: CashRegister,
+          attributes: ["id", "name"],
+          include: {
+            model: PointOfSale,
+            attributes: ["id", "urlLink"],
+          },
+        },
+      },
+    });
+
+    if (!worker) {
+      return res.status(404).json({
+        status: "error",
+        message: "Compte utilisateur non trouvé. Veuillez réessayer.",
+      });
+    }
+
+    // Récupérer les caisses associées au Merchant du worker
+    const cashRegisters = worker.Merchant.CashRegisters;
+    const merchantName = worker.Merchant.name;
+    const merchantId = worker.Merchant.id;
+
+    // Vérifier si des caisses sont trouvées
+    if (!cashRegisters || cashRegisters.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucune caisse trouvée pour ce worker.",
+      });
+    }
+
+    // Retourner seulement les champs 'id' et 'name' des caisses
+    const result = cashRegisters.map((cashRegister) => ({
+      id: cashRegister.id,
+      name: cashRegister.name,
+      merchantId: merchantId,
+      merchantName: merchantName,
+      posId: cashRegister.PointOfSale ? cashRegister.PointOfSale.id : null,
+      posName: cashRegister.PointOfSale
+        ? cashRegister.PointOfSale.urlLink
+        : null,
+    }));
+
+    return res.status(200).json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    console.error(`ERROR GET WORKER CASHREGISTER: ${error}`);
+    appendErrorLog(`ERROR GET WORKER CASHREGISTER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la récuperation des caisses lié à l'utilisateur.",
+    });
+  }
+};
+
+const startSession = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    const { cashRegisterId } = req.body;
+
+    if (!cashRegisterId) {
+      return res
+        .status(400)
+        .json({
+          status: "error",
+          message: "Identifiant de caisse non fourni.",
+        });
+    }
+
+    // Récupérer le worker et vérifier s'il existe
+    if (!token) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token non fourni." });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const customToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res
+          .status(401)
+          .json({ status: "error", message: "TokenExpiredError" });
+      }
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token invalide." });
+    }
+
+    const workerId = decodedToken.id;
+
+    const worker = await Worker.findByPk(workerId);
+    if (!worker) {
+      return res.status(404).json({
+        status: "error",
+        message: "Compte utilisateur non trouvé. Veuillez réessayer.",
+      });
+    }
+
+    const existingSession = await WorkerSession.findOne({
+      where: { workerId, endTime: null },
+    });
+
+    if (existingSession) {
+      return res.status(400).json({
+        status: "error",
+        message: "Une session est déjà ouverte pour ce compte utilisateur.",
+      });
+    }
+
+    // Créer une nouvelle session
+    await WorkerSession.create({
+      workerId,
+      cashRegisterId,
+    });
+
+    return res.status(201).json({
+      status: "success",
+      message: "Session ouverte avec succès.",
+    });
+  } catch (error) {
+    console.error(`ERROR START SESSION: ${error}`);
+    appendErrorLog(`ERROR START SESSION: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la création de la session.",
+    });
+  }
+};
+
+module.exports = {
+  create,
+  destroy,
+  updatePassword,
+  disableAccount,
+  activateAccount,
+  getAll,
+  login,
+  getAllCashregisters,
+  startSession,
+};
