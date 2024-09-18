@@ -185,6 +185,7 @@ const updatePhoto = async (req, res) => {
     });
   }
 };
+
 const updateCover = async (req, res) => {
   try {
     const { merchantId } = req.body;

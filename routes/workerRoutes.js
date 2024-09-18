@@ -27,7 +27,13 @@ router.post("/login", workerController.login);
 // ALL USER CASHREGISTERS
 router.get("/all-cashregisters", verifyToken, isWorker, workerController.getAllCashregisters);
 
+// BALANCE OF CASH REGISTER
+router.get("/cashregister-balance", verifyToken, isWorker, workerController.getCashBalance);
+
 // START SESSION
 router.post("/start-session", verifyToken, isWorker, workerController.startSession);
+
+// END SESSION
+router.post("/end-session", verifyToken, isWorker, workerController.endSession);
 
 module.exports = router
