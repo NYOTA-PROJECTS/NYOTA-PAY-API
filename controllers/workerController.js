@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require('fs-extra');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { Worker, Merchant, CashRegister, PointOfSale, WorkerSession, CashRegisterBalance, MerchantAdmin } = require("../models");
+const { Worker, Merchant, CashRegister, PointOfSale, WorkerSession, CashRegisterBalance, MerchantAdmin, Customer, CustomerBalance } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 const { sequelize } = require("../models");
 
@@ -803,6 +803,106 @@ const getCashBalance = async (req, res) => {
   }
 }
 
+const scanCustomer = async (req, res) => {
+  try {
+    const { uuid } = req.body;
+
+    if (!uuid) {
+      return res.status(400).json({
+        status: "error",
+        message: "Veuillez scanner le codeQR du client.",  
+      });
+    }
+
+    const customer = await Customer.findOne({ where: { qrcode: uuid } });
+
+    if (!customer) {
+      return res.status(404).json({
+        status: "error",
+        message: "Utilisateur non trouvé.",
+      });
+    }
+
+    const response = {
+      name: `${customer.firstname} ${customer.lastname}`,
+      phone: customer.phone,
+    };
+
+    return res.status(200).json({
+      status: "success",
+      data: response
+    });
+  } catch (error) {
+    console.error(`ERROR SCAN CUSTOMER: ${error}`);
+    appendErrorLog(`ERROR SCAN CUSTOMER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors du scanning.",
+    });
+  }
+}
+
+const getCustomeInfos = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le numéro de téléphone du client est requis afin d'éfectuer cette opération.",
+      });
+    }
+
+    // Rechercher le client par son numéro de téléphone
+    let customer = await Customer.findOne({ where: { phone } });
+
+    if (!customer) {
+      // Si le client n'existe pas, créer un nouveau compte avec le solde initial de 0
+      customer = await Customer.create({ phone, isMobile: false });
+
+      // Créer également une entrée de solde pour le client avec un montant initial de 0
+      await CustomerBalance.create({
+        customerId: customer.id,
+        amount: 0,
+      });
+
+      // Répondre avec les détails du nouveau compte créé
+      return res.status(201).json({
+        status: "success",
+        message: "Le compte client a été créé avec succès.",
+        customer: {
+          name: 'Aucun profil créé',
+          phone: customer.phone,
+        },
+      });
+    } else {
+      // Répondre avec les détails du client existant
+      if (customer.firstName === null && customer.lastName === null) {
+         return res.status(404).json({
+           status: "error",
+           message: "Le client doit ce connecté à l'application mobile.",
+         })
+      } 
+
+      return res.status(200).json({
+        status: "success",
+        message: "Le client existe déjà.",
+        customer: {
+          name : `${customer.firstName} ${customer.lastName}`,
+          phone: customer.phone,
+        },
+      });
+    }
+    
+  } catch (error) {
+    console.error(`ERROR GET CUSTOMER DETAILS: ${error}`);
+    appendErrorLog(`ERROR GET CUSTOMER DETAILS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la création de la session.",
+    });
+  }
+}
+
 const endSession = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -1091,5 +1191,7 @@ module.exports = {
   startSession,
   getCashBalance,
   endSession,
-  getCashRegisterBalance
+  getCashRegisterBalance,
+  scanCustomer,
+  getCustomeInfos,
 };

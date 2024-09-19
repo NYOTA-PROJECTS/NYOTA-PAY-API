@@ -36,4 +36,10 @@ router.post("/start-session", verifyToken, isWorker, workerController.startSessi
 // END SESSION
 router.post("/end-session", verifyToken, isWorker, workerController.endSession);
 
+// SCAN CUSTOMER
+router.post("/scan-customer", verifyToken, isWorker, workerController.scanCustomer);
+
+// GET CUSTOMER DETAILS
+router.post("/customer-details", verifyToken, isWorker, workerController.getCustomeInfos);
+
 module.exports = router
