@@ -56,8 +56,8 @@ const login = async (req, res) => {
       data: adminResponse,
     });
   } catch (error) {
-    console.error(`ERROR LOGIN: ${error}`);
-    appendErrorLog(`ERROR LOGIN: ${error}`);
+    console.error(`ERROR LOGIN ADMIN: ${error}`);
+    appendErrorLog(`ERROR LOGIN ADMIN: ${error}`);
     return res.status(500).json({
       status: "error",
       message: "Une erreur s'est produite lors de la connexion.",

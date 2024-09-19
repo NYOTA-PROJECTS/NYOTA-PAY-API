@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { Admin, Merchant, CashRegister, Worker } = require("../models");
+const { Admin, Merchant, CashRegister, Worker, Customer } = require("../models");
 
 // Middleware pour vérifier le token JWT et l'utilisateur associé
 const verifyToken = async (req, res, next) => {
@@ -41,6 +41,8 @@ const verifyToken = async (req, res, next) => {
         user = await CashRegister.findByPk(decoded.id);
       } else if (decoded.role === "isWorker") {
         user = await Worker.findByPk(decoded.id);
+      } else if (decoded.role === "isCustomer") {
+        user = await Customer.findByPk(decoded.id);
       }
 
       if (!user) {
@@ -98,6 +100,13 @@ const isWorker = (req, res, next) => {
   next();
 };
 
+const isCustomer = (req, res, next) => {
+  if (req.user.role !== "isCustomer") {
+    return res.status(403).json({ message: "Échec de l'autorisation.!" });
+  }
+  next();
+};
+
 // Middleware pour vérifier si l'utilisateur est un admin ou un marchant
 const isAdminOrMerchant = (req, res, next) => {
   if (req.user.role !== "isAdmin" && req.user.role !== "isMerchant") {
@@ -122,4 +131,5 @@ module.exports = {
   isAdminOrMerchant,
   isCashRegister,
   isWorker,
+  isCustomer,
 };
