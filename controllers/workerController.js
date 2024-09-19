@@ -470,9 +470,21 @@ const login = async (req, res) => {
       });
     }
 
+    const id = worker.id;
+    const currentSession = await WorkerSession.findOne({
+      where: { id, endTime: null },
+    });
+    
+    if (currentSession) {
+      return res.status(404).json({
+        status: "error",
+        message: "Une session est déjà ouverte pour ce compte utilisateur, veuillez attendre la fin de cette session ou contacter l'administrateur." ,
+      });
+    }
+
     const token = jwt.sign(
       {
-        id: worker.id,
+        id: id,
         role: "isWorker",
       },
       process.env.JWT_SECRET
