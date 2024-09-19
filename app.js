@@ -55,6 +55,13 @@ const createUploadsMerchantFolder = (req, res, next) => {
   }
   next();
 };
+const createUploadsCustomerFolder = (req, res, next) => {
+  const folderPath = "public/customers";
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+  next();
+};
 
 // Public directory
 app.use(express.static("public"));
@@ -90,7 +97,7 @@ app.use("/api/v1/merchant", createUploadsMerchantFolder, merchantRoutes);
 app.use("/api/v1/cashregister", cashregisterRoutes);
 app.use("/api/v1/pointofsell", pointofsellRoutes);
 app.use("/api/v1/worker", workerRoutes);
-app.use("/api/v1/customer", customers);
+app.use("/api/v1/customer", createUploadsCustomerFolder, customers);
 
 // Socket.IO : Gestion des utilisateurs connectés
 // Socket.IO : gestion des connexions

@@ -3,7 +3,6 @@ const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
 const { Customer, CustomerBalance } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
-const uuid = uuidv4();
 
 const login = async (req, res) => {
   try {
@@ -37,10 +36,11 @@ const login = async (req, res) => {
       include: [
         {
           model: CustomerBalance,
-          attributes: ["balance"],
+          attributes: ["id", "amount"],
         },
       ],
     });
+
     if (!customer) {
       return res.status(409).json({
         status: "error",
@@ -70,7 +70,7 @@ const login = async (req, res) => {
       phone: customer.phone,
       photo: customer.photo,
       qrcode: customer.qrcode,
-      balance: customer.CustomerBalance.balance,
+      balance: customer.CustomerBalance.amount,
       token: token,
     };
 
@@ -140,6 +140,7 @@ const create = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const uuid = uuidv4();
     const newCustomer = await Customer.create({
       firstName,
       lastName,
@@ -333,7 +334,7 @@ const updatePhoto = async (req, res) => {
     let imageUrl = null;
     if (req.file) {
       const file = `customers/${req.file.filename}`;
-      imageUrl = `${req.protocol}://${host}/${fileUrl}`;
+      imageUrl = `${req.protocol}://${host}/${file}`;
     }
 
     await customer.update({ photo: imageUrl }, { where: { id: customerId } });
