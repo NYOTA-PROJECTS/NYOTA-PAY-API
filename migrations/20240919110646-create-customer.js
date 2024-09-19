@@ -17,6 +17,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      photo: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       phone: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -37,7 +41,8 @@ module.exports = {
       },
       qrcode: {
         type: Sequelize.STRING,
-        allowNull: true
+        allowNull: true,
+        unique: true
       },
       createdAt: {
         allowNull: false,
