@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const path = require("path");
+const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
 const { Customer, CustomerBalance } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -30,6 +32,7 @@ const login = async (req, res) => {
         "lastName",
         "phone",
         "photo",
+        "thumbnail",
         "qrcode",
         "password",
       ],
@@ -69,6 +72,7 @@ const login = async (req, res) => {
       lastName: customer.lastName,
       phone: customer.phone,
       photo: customer.photo,
+      thumbnail: customer.thumbnail,
       qrcode: customer.qrcode,
       balance: customer.CustomerBalance.amount,
       token: token,
@@ -331,11 +335,23 @@ const updatePhoto = async (req, res) => {
       });
     }
 
-    let imageUrl = null;
-    if (req.file) {
-      const file = `customers/${req.file.filename}`;
-      imageUrl = `${req.protocol}://${host}/${file}`;
-    }
+    // Générez et enregistrez l'image et le thumbnail
+    const imagePath = `customers/${photo.filename}`;
+    const imageUrl = `${req.protocol}://${host}/${imagePath}`;
+    const thumbnailFilename = `thumb_${photo.filename}`;
+    const thumbnailPath = `customers/${thumbnailFilename}`;
+    const thumbnailUrl = `${req.protocol}://${host}/${thumbnailPath}`;
+
+    // Créer le thumbnail avec sharp
+    await sharp(photo.path)
+      .resize(200, 200) // Taille du thumbnail
+      .toFile(path.join(__dirname, `../public/${thumbnailPath}`));
+
+    // Mettre à jour le profil avec l'image et le thumbnail
+    await customer.update(
+      { photo: imageUrl, thumbnail: thumbnailUrl }, // Enregistre l'URL de la photo et du thumbnail
+      { where: { id: customerId } }
+    );
 
     await customer.update({ photo: imageUrl }, { where: { id: customerId } });
     return res.status(200).json({
