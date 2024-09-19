@@ -16,6 +16,7 @@ const cashregisterRoutes = require("./routes/cashregisterRoutes");
 const pointofsellRoutes = require("./routes/pointofsellRoutes");
 const workerRoutes = require("./routes/workerRoutes");
 const customers = require("./routes/customerRoutes");
+const transactions = require("./routes/transactionRoutes");
 //const { getCashRegisterBalance } = require("./controllers/workerController");
 //const { Server } = require("socket.io");
 
@@ -98,6 +99,7 @@ app.use("/api/v1/cashregister", cashregisterRoutes);
 app.use("/api/v1/pointofsell", pointofsellRoutes);
 app.use("/api/v1/worker", workerRoutes);
 app.use("/api/v1/customer", createUploadsCustomerFolder, customers);
+app.use("/api/v1/transaction", transactions);
 
 // Socket.IO : Gestion des utilisateurs connectés
 // Socket.IO : gestion des connexions

@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.PointOfSale, { foreignKey: 'merchantposId', onUpdate: 'CASCADE' });
       this.hasMany(models.WorkerSession, { foreignKey: 'workerId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
       this.hasOne(models.CashRegisterBalance, { foreignKey: 'cashregisterId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.hasMany(models.Transaction, { foreignKey: 'cashRegisterId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }
   }
   CashRegister.init({

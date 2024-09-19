@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       this.belongsTo(models.Merchant, { foreignKey: 'merchantId', onUpdate: 'CASCADE' });
       this.hasMany(models.WorkerSession, { foreignKey: 'workerId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
+      this.hasMany(models.Transaction, { foreignKey: 'workerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }
   }
   Worker.init({
