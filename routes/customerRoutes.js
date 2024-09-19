@@ -16,4 +16,7 @@ router.put("/update-password", verifyToken, isCustomer, customerController.updat
 // UPDATE PROFILE PHOTO
 router.put("/update-photo", verifyToken, isCustomer, upload.single("photo"), customerController.updatePhoto);
 
+// BALANCE
+router.get("/balance", verifyToken, isCustomer, customerController.balance);
+
 module.exports = router;

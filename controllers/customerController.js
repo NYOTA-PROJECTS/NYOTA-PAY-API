@@ -368,4 +368,71 @@ const updatePhoto = async (req, res) => {
   }
 };
 
-module.exports = { login, create, updatePassword, updatePhoto };
+const balance = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    // Récupérer le worker et vérifier s'il existe
+    if (!token) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token non fourni." });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const customToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res
+          .status(401)
+          .json({ status: "error", message: "TokenExpiredError" });
+      }
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token invalide." });
+    }
+
+    const customerId = decodedToken.id;
+    const customer = await Customer.findByPk(customerId);
+    if (!customer) {
+      return res.status(404).json({
+        status: "error",
+        message:
+          "Compte non trouvé. Veuillez réessayer ou en création un nouveau.",
+      });
+    }
+    const balance = await CustomerBalance.findOne({
+      where: { customerId: customerId },
+    });
+    if (!balance) {
+      return res.status(404).json({
+        status: "error",
+        message: "Solde non défini. Veuillez en creer un compte actif.",
+      });
+    }
+    return res.status(200).json({
+      status: "success",
+      data: balance.amount,
+    });
+  } catch (error) {
+    console.error(`ERROR BALANCE CUSTOMER: ${error}`);
+    appendErrorLog(`ERROR BALANCE CUSTOMER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recuperation du solde.",
+    });
+  }
+};
+
+module.exports = { login, create, updatePassword, updatePhoto, balance };
