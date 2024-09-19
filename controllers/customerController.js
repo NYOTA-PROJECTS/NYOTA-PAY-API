@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
-const { Customer } = require("../models");
+const { Customer, CustomerBalance } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 const uuid = uuidv4();
 
@@ -23,7 +23,24 @@ const login = async (req, res) => {
       });
     }
 
-    const customer = await Customer.findOne({ where: { phone } });
+    const customer = await Customer.findOne({
+      where: { phone },
+      attributes: [
+        "id",
+        "firstName",
+        "lastName",
+        "phone",
+        "photo",
+        "qrcode",
+        "password",
+      ],
+      include: [
+        {
+          model: CustomerBalance,
+          attributes: ["balance"],
+        },
+      ],
+    });
     if (!customer) {
       return res.status(409).json({
         status: "error",
@@ -53,6 +70,7 @@ const login = async (req, res) => {
       phone: customer.phone,
       photo: customer.photo,
       qrcode: customer.qrcode,
+      balance: customer.CustomerBalance.balance,
       token: token,
     };
 
@@ -129,6 +147,11 @@ const create = async (req, res) => {
       isMobile: true,
       qrcode: uuid,
       password: hashedPassword,
+    });
+
+    await CustomerBalance.create({
+      customerId: newCustomer.id,
+      balance: 0,
     });
 
     const token = jwt.sign(
@@ -309,8 +332,8 @@ const updatePhoto = async (req, res) => {
 
     let imageUrl = null;
     if (req.file) {
-        const file = `customers/${req.file.filename}`;
-        imageUrl = `${req.protocol}://${host}/${fileUrl}`;
+      const file = `customers/${req.file.filename}`;
+      imageUrl = `${req.protocol}://${host}/${fileUrl}`;
     }
 
     await customer.update({ photo: imageUrl }, { where: { id: customerId } });
@@ -327,4 +350,5 @@ const updatePhoto = async (req, res) => {
     });
   }
 };
+
 module.exports = { login, create, updatePassword, updatePhoto };
