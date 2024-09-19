@@ -6,7 +6,7 @@
 <summary>REQUEST</summary>
 <br>
 
-### Login
+### Connexion
 - **URL**: `/api/v1/admin/login`
 - **Méthode**: `POST`
 - **Description**: Connexion de l'admin.
@@ -229,5 +229,50 @@
 - **Description**: Mise à jours du mot de passe d'un utilisateur.
 - **Header**:
     - `Authorization` (string): Token Bearer de l'admin.
+
+</details>
+
+## CLIENT
+<details>
+<summary>REQUEST</summary>
+<br>
+
+### Connexion
+- **URL**: `/api/v1/customer/login`
+- **Méthode**: `POST`
+- **Description**: Connexion de client.
+- **Body**:
+    - `phone` (string): Téléphone.
+    - `password` (string): Mot de passe.
+
+### CRÉATION DU COMPTE
+- **URL**: `/api/v1/customer/create`
+- **Méthode**: `POST`
+- **Description**: Création du compte client.
+- **Body**:
+    - `firstName` (string): Nom.
+    - `lastName` (string): Prénom.
+    - `phone` (string):Téléphone.
+    - `password` (string): Mot de passe.
+
+### CRÉATION DU COMPTE
+- **URL**: `/api/v1/customer/update-password`
+- **Méthode**: `PUT`
+- **Description**: Mise à jours du mot de passe compte client.
+- **Header**:
+    - `Authorization` (string): Token Bearer du client.
+- **Body**:
+    - `oldPassword` (string): Ancien mot de passe.
+    - `newPassword` (string): Nouveau mot de passe.
+
+
+### MISE À JOURS DE LA PHOTO DE PROFIL
+- **URL**: `/api/v1/customer/update-photo`
+- **Méthode**: `PUT`
+- **Description**: Mise à jours du mot de passe compte client.
+- **Header**:
+    - `Authorization` (string): Token Bearer du client.
+- **Body**:
+    - `photo` (file): Image de profil.
 
 </details>
