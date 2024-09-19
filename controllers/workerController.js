@@ -666,6 +666,7 @@ const startSession = async (req, res) => {
       });
     }
 
+    // Vérifier si une session est déjà ouverte
     const existingSession = await WorkerSession.findOne({
       where: { workerId, endTime: null },
     });
@@ -677,10 +678,28 @@ const startSession = async (req, res) => {
       });
     }
 
-    // Créer une nouvelle session
+    // Récupérer le solde de la caisse
+    const cashRegister = await CashRegister.findByPk(cashRegisterId, {
+      include: [{
+        model: CashRegisterBalance,
+        required: true,
+      }]
+    });
+
+    if (!cashRegister) {
+      return res.status(404).json({
+        status: "error",
+        message: "Caisse non trouvée ou solde non disponible.",
+      });
+    }
+
+    const initialBalance = cashRegister.CashRegisterBalance.amount;
+
+    // Créer une nouvelle session avec le solde initial
     await WorkerSession.create({
       workerId,
       cashRegisterId,
+      initialBalance,
     });
 
     return res.status(201).json({

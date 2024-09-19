@@ -29,6 +29,11 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
+      initialBalance: {
+        type: Sequelize.DOUBLE,
+        allowNull: false,
+        defaultValue: 0
+      },
       startTime: {
         type: Sequelize.DATE,
         allowNull: false,

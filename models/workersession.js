@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    initialBalance: {
+      type: DataTypes.DOUBLE,
+      allowNull: false,
+    },
     startTime: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -32,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     endTime: {
       type: DataTypes.DATE,
       allowNull: true,
-    },
+    }
   }, {
     sequelize,
     modelName: 'WorkerSession',
