@@ -1055,19 +1055,19 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
   });
 
   const logoPath = path.join(__dirname, '../assets', 'logo.png');
-  const logoWidth = 150; // Adjust the width as needed
-  const logoHeight = 150; // Adjust the height as needed
+  const logoWidth = 90; // Adjust the width as needed
+  const logoHeight = 90; // Adjust the height as needed
 
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument();
+      const doc = new PDFDocument( {  size: 'A4' });
       const pdfPath = path.join(dirPath, `Rapport_${session.id}.pdf`);
       const writeStream = fs.createWriteStream(pdfPath);
       doc.pipe(writeStream);
 
       // Calculate the x position to center the image horizontally
       const xPosition = (doc.page.width - logoWidth) / 2;
-      doc.image(logoPath, xPosition, 20, { width: logoWidth, height: logoHeight });
+      doc.image(logoPath, xPosition, 30, { width: logoWidth, height: logoHeight });
 
       // Move down for text
       doc.moveDown(10);
