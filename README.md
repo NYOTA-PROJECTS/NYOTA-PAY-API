@@ -275,4 +275,11 @@
 - **Body**:
     - `photo` (file): Image de profil.
 
+### SOLDE DU CLIENT
+- **URL**: `/api/v1/customer/balance`
+- **Méthode**: `GET`
+- **Description**: Mise à jours du mot de passe compte client.
+- **Header**:
+    - `Authorization` (string): Token Bearer du client.
+
 </details>
