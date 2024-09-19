@@ -34,6 +34,7 @@ const login = async (req, res) => {
         "photo",
         "thumbnail",
         "qrcode",
+        "isMobile",
         "password",
       ],
       include: [
@@ -48,6 +49,14 @@ const login = async (req, res) => {
       return res.status(409).json({
         status: "error",
         message: "Compte non enregistrée ou incorrecte. Veuillez réessayer.",
+      });
+    }
+
+    if (customer.isMobile === false) {
+      return res.status(401).json({
+        status: "error",
+        message:
+          "Ce compte n'existe pas encore sur l'application. Nous vous invitons à créer un compte pour accéder aux services.",
       });
     }
 
@@ -96,6 +105,7 @@ const create = async (req, res) => {
   try {
     const { firstName, lastName, phone, password } = req.body;
 
+    // Vérifications des données d'entrée
     if (!firstName) {
       return res.status(400).json({
         status: "error",
@@ -118,7 +128,6 @@ const create = async (req, res) => {
     }
 
     const congoPhoneRegex = /^(04|05|06)\d{7}$/;
-
     if (!congoPhoneRegex.test(phone)) {
       return res.status(400).json({
         status: "error",
@@ -127,8 +136,11 @@ const create = async (req, res) => {
       });
     }
 
+    // Recherche du client par son numéro de téléphone
     const customer = await Customer.findOne({ where: { phone } });
-    if (customer) {
+
+    // Si le client existe et que isMobile est à true, retournez une erreur
+    if (customer && customer.isMobile === true) {
       return res.status(409).json({
         status: "error",
         message:
@@ -143,22 +155,52 @@ const create = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const uuid = uuidv4();
-    const newCustomer = await Customer.create({
-      firstName,
-      lastName,
-      phone,
-      isMobile: true,
-      qrcode: uuid,
-      password: hashedPassword,
-    });
+    let newCustomer;
 
-    await CustomerBalance.create({
-      customerId: newCustomer.id,
-      balance: 0,
-    });
+    // Si le client existe mais isMobile est à false, on met à jour son compte
+    if (customer && customer.isMobile === false) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const uuid = uuidv4();
 
+      // Mise à jour des informations du client
+      await Customer.update(
+        {
+          firstName,
+          lastName,
+          phone,
+          isMobile: true,
+          qrcode: uuid,
+          password: hashedPassword,
+        },
+        {
+          where: { id: customer.id },
+        }
+      );
+
+      // Récupération des nouvelles informations après mise à jour
+      newCustomer = await Customer.findOne({ where: { id: customer.id } });
+    } else {
+      // Si le client n'existe pas, on crée un nouveau client
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const uuid = uuidv4();
+
+      newCustomer = await Customer.create({
+        firstName,
+        lastName,
+        phone,
+        isMobile: true,
+        qrcode: uuid,
+        password: hashedPassword,
+      });
+
+      // Créer le solde initial du client
+      await CustomerBalance.create({
+        customerId: newCustomer.id,
+        balance: 0,
+      });
+    }
+
+    // Génération du token JWT pour authentifier le client
     const token = jwt.sign(
       {
         id: newCustomer.id,
@@ -167,6 +209,7 @@ const create = async (req, res) => {
       process.env.JWT_SECRET
     );
 
+    // Préparation de la réponse client avec les informations nécessaires
     const customerResponse = {
       firstName: newCustomer.firstName,
       lastName: newCustomer.lastName,
@@ -184,7 +227,7 @@ const create = async (req, res) => {
     appendErrorLog(`ERROR CREATE CUSTOMER: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la creation du compte.",
+      message: "Une erreur s'est produite lors de la création du compte.",
     });
   }
 };
