@@ -842,7 +842,7 @@ const scanCustomer = async (req, res) => {
   }
 }
 
-const getCustomeInfos = async (req, res) => {
+const getCustomerInfos = async (req, res) => {
   try {
     const { phone } = req.body;
     if (!phone) {
@@ -866,10 +866,9 @@ const getCustomeInfos = async (req, res) => {
       });
 
       // Répondre avec les détails du nouveau compte créé
-      return res.status(201).json({
+      return res.status(200).json({
         status: "success",
-        message: "Le compte client a été créé avec succès.",
-        customer: {
+        data: {
           name: 'Aucun profil créé',
           phone: customer.phone,
         },
@@ -885,8 +884,7 @@ const getCustomeInfos = async (req, res) => {
 
       return res.status(200).json({
         status: "success",
-        message: "Le client existe déjà.",
-        customer: {
+        data: {
           name : `${customer.firstName} ${customer.lastName}`,
           phone: customer.phone,
         },
@@ -1193,5 +1191,5 @@ module.exports = {
   endSession,
   getCashRegisterBalance,
   scanCustomer,
-  getCustomeInfos,
+  getCustomerInfos,
 };

@@ -40,6 +40,6 @@ router.post("/end-session", verifyToken, isWorker, workerController.endSession);
 router.post("/scan-customer", verifyToken, isWorker, workerController.scanCustomer);
 
 // GET CUSTOMER DETAILS
-router.post("/customer-details", verifyToken, isWorker, workerController.getCustomeInfos);
+router.post("/customer-details", verifyToken, isWorker, workerController.getCustomerInfos);
 
 module.exports = router
