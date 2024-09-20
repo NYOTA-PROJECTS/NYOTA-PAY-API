@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const {
   Customer,
   Merchant,
@@ -19,7 +20,7 @@ const renderMonais = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const token = req.headers.authorization;
-    const { merchantId, cashRegisterId, phone, amount } = req.body;
+    const { merchantId, cashRegisterId, phone, amount, password } = req.body;
     if (!token) {
       return res
         .status(401)
@@ -50,12 +51,26 @@ const renderMonais = async (req, res) => {
         .json({ status: "error", message: "Token invalide." });
     }
 
+    if (!password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le mot de passe est requis.",
+      });
+    }
+
     const workerId = decodedToken.id;
     const worker = await Worker.findByPk(workerId);
     if (!worker) {
       return res.status(400).json({
         status: "error",
         message: "Ce compte utilisateur n'existe pas.",
+      });
+    }
+
+    if (!bcrypt.compareSync(password, worker.password)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le mot de passe ne correspond pas.",
       });
     }
 
@@ -148,7 +163,7 @@ const renderMonais = async (req, res) => {
     if (customer.isMobile === true) {
       // Envoi d'une notification via Firebase Cloud Messaging
       const message = {
-        token: customer.token, // Token Firebase du client
+        token: customer.token,
         notification: {
           title: "Transaction réussie",
           body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA.`,
