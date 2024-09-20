@@ -171,7 +171,7 @@ const renderMonais = async (req, res) => {
       const client = require("twilio")(accountSid, authToken);
       client.messages
         .create({
-          body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte.👉🏽\nhttps://nyotapay.com/landingpage`,
+          body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte.\n👉🏽 https://nyotapay.com/landingpage`,
           from: "+18302613361",
           to: `+242${customer.phone}`,
         })
