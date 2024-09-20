@@ -1,20 +1,10 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const {
-  Customer,
-  Merchant,
-  CashRegister,
-  Worker,
-  CashRegisterBalance,
-  CustomerBalance,
-  Transaction,
-} = require("../models");
+const { Customer, Merchant, CashRegister, Worker, CashRegisterBalance, CustomerBalance, Transaction } = require("../models");
 const { sequelize } = require("../models");
 const admin = require("firebase-admin");
 const { appendErrorLog } = require("../utils/logging");
-const {
-  generateTransactionCode,
-} = require("../utils/transactionCodeGenerator");
+const { generateTransactionCode } = require("../utils/transactionCodeGenerator");
 
 const renderMonais = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -174,7 +164,7 @@ const renderMonais = async (req, res) => {
       client.messages
         .create({
           body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte.\n👉🏽 https://nyotapay.com/landingpage`,
-          from: "+18302613361",
+          from: "NYOTAPAY",
           to: `+242${customer.phone}`,
         })
         .then((message) => console.log("SMS envoyé:", message.sid))
@@ -348,7 +338,7 @@ const receiveMonais = async (req, res) => {
       client.messages
         .create({
           body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte.\n👉🏽 https://nyotapay.com/landingpage`,
-          from: "+18302613361",
+          from: "NYOTAPAY",
           to: `+242${customer.phone}`,
         })
         .then((message) => console.log("SMS envoyé:", message.sid))
