@@ -1,4 +1,5 @@
 const PDFDocument = require('pdfkit');
+const PDFTable = require('pdfkit-table');
 const nodemailer = require('nodemailer');
 const path = require("path");
 const fs = require('fs-extra');
@@ -1032,7 +1033,6 @@ const endSession = async (req, res) => {
   }
 };
 
-// Fonction pour générer le PDF avec le solde du worker
 const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, dirPath) => {
   const formattedEndTime = new Date(session.endTime).toLocaleString('fr-FR', {
     timeZone: 'Africa/Brazzaville',
@@ -1053,31 +1053,96 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
   });
 
   const logoPath = path.join(__dirname, '../assets', 'logo.png');
-  const logoWidth = 90; // Adjust the width as needed
-  const logoHeight = 90; // Adjust the height as needed
+  const logoWidth = 60;
+  const logoHeight = 60;
+
+  // Informations fictives supplémentaires
+  const openingBalance = 35788;
+  const virtualMoneyGiven = 9765;
+  const virtualMoneyReceived = 5000;
+  const nyotaCommission = -342;
+  const closingBalance = cashRegisterBalance.amount;
+  const physicalBalanceExcess = 4765;
+
+  // Exemple de transactions (remplacer par les vraies données)
+  const transactions = Array.from({ length: 20 }, (_, i) => ({
+    phone: `06648754${i}`, // Exemple de numéro de téléphone
+    moneyReceived: `${5000 + i * 100} FCFA`,
+    moneyGiven: `${3000 + i * 100} FCFA`
+  }));
 
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument( {  size: 'A4' });
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
       const pdfPath = path.join(dirPath, `Rapport_${session.id}.pdf`);
       const writeStream = fs.createWriteStream(pdfPath);
       doc.pipe(writeStream);
 
-      // Calculate the x position to center the image horizontally
-      const xPosition = (doc.page.width - logoWidth) / 2;
-      doc.image(logoPath, xPosition, 30, { width: logoWidth, height: logoHeight });
+      // Ajouter le logo
+      doc.image(logoPath, 60, 30, { width: logoWidth, height: logoHeight });
 
-      // Move down for text
-      doc.moveDown(10);
+      doc.moveDown(5);
+      doc.fontSize(20).text(`Ticket Z de la caisse n°${worker.Merchant.CashRegisters[0].id} du ${formattedEndTime.split(' ')[0]}`, { align: 'center' });
+      doc.moveDown(2);
 
-      doc.fontSize(20).text('Solde de la caisse', { align: 'center' });
-      doc.fontSize(14).text(`Marchand : ${worker.Merchant.name}`);
-      doc.text(`Point de vente : ${worker.Merchant.CashRegisters[0].PointOfSale.urlLink}`);
-      doc.text(`Nom du caissier : ${worker.name}`);
-      doc.text(`Date de début : ${formattedStartTime}`);
-      doc.text(`Date de fin : ${formattedEndTime}`);
-      doc.text(`Solde : ${cashRegisterBalance.amount} ${worker.Merchant.currency || 'FCFA'}`);
+      doc.fontSize(14).text(`Marchand: ${worker.Merchant.name}`);
+      doc.text(`Point de vente: ${worker.Merchant.CashRegisters[0].PointOfSale.urlLink}`);
+      doc.text(`Caissier / Caissière: ${worker.name}`);
+      doc.text(`Date et heure d’ouverture: ${formattedStartTime}`);
+      doc.text(`Date et heure de fermeture: ${formattedEndTime}`);
+      doc.moveDown(1);
 
+      // Informations de solde
+      doc.text(`Solde à l’ouverture: ${openingBalance} FCFA`);
+      doc.text(`Monnaie virtuelle rendue: ${virtualMoneyGiven} FCFA`);
+      doc.text(`Monnaie virtuelle encaissée: ${virtualMoneyReceived} FCFA`);
+      doc.text(`Commission Nyota sur monnaie virtuelle encaissée: ${nyotaCommission} FCFA`);
+      doc.text(`Solde à la fermeture: ${closingBalance} FCFA`);
+      doc.text(`Solde physique de la caisse excédentaire de: ${physicalBalanceExcess} FCFA`);
+      doc.moveDown(1);
+
+      // Relevé de transaction
+      doc.fontSize(16).text(`Relevé de transaction`, { align: 'center', underline: true });
+      doc.moveDown(1);
+
+      // Créer le tableau manuellement avec gestion des pages
+      const tableTop = doc.y;
+      const itemHeight = 20;
+      const col1X = 60;
+      const col2X = 200;
+      const col3X = 350;
+      const pageBottomMargin = doc.page.height - 50;
+
+      const renderTableHeader = () => {
+        doc.fontSize(12).text('Téléphone Client', col1X, tableTop);
+        doc.text('Monnaie Reçue', col2X, tableTop);
+        doc.text('Monnaie Rendue', col3X, tableTop);
+      };
+
+      // Afficher les en-têtes du tableau
+      renderTableHeader();
+
+      let tableY = tableTop + itemHeight;
+
+      // Affichage des transactions avec gestion du saut de page
+      transactions.forEach((transaction, index) => {
+        if (index >= 20) return; // Afficher seulement les 20 premières transactions
+
+        // Si l'espace restant est insuffisant pour un élément, on passe à la page suivante
+        if (tableY + itemHeight > pageBottomMargin) {
+          doc.addPage(); // Ajouter une nouvelle page
+          tableY = 50; // Réinitialiser la position Y
+          renderTableHeader(); // Réafficher les en-têtes du tableau
+          tableY += itemHeight;
+        }
+
+        doc.fontSize(10).text(transaction.phone, col1X, tableY);
+        doc.text(transaction.moneyReceived, col2X, tableY);
+        doc.text(transaction.moneyGiven, col3X, tableY);
+        tableY += itemHeight;
+      });
+
+      // Fin du document
       doc.end();
 
       writeStream.on('finish', () => {
@@ -1088,7 +1153,6 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
     }
   });
 };
-
 
 // Fonction pour envoyer un e-mail avec le PDF en pièce jointe
 const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, recipientEmail) => {
@@ -1135,7 +1199,7 @@ const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, r
 
   const mailOptions = {
     from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
-    to: recipientEmail,
+    to: 'rubensalban@gmail.com',
     subject: `Ticket Z de la caisse n°${worker.Merchant.CashRegisters[0].id} - ${formattedEndTime.split(' ')[0]}`,
     text: emailBody,
     attachments: [
