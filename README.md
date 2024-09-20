@@ -282,4 +282,14 @@
 - **Header**:
     - `Authorization` (string): Token Bearer du client.
 
+### MISE À JOURS TOKEN FIREBASE
+- **URL**: `/api/v1/customer/update-token`
+- **Méthode**: `PUT`
+- **Description**: Mise à jours du token client.
+- **Header**:
+    - `Authorization` (string): Token Bearer du client.
+- **Body**:
+    - `token` (string): Token firebase du client.
+
+
 </details>

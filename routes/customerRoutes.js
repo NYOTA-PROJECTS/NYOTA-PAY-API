@@ -19,4 +19,7 @@ router.put("/update-photo", verifyToken, isCustomer, upload.single("photo"), cus
 // BALANCE
 router.get("/balance", verifyToken, isCustomer, customerController.balance);
 
+// UPDATE TOKEN NOTIFICATION
+router.put("/update-token", verifyToken, isCustomer, customerController.updateToken);
+
 module.exports = router;

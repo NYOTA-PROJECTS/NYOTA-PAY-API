@@ -478,4 +478,77 @@ const balance = async (req, res) => {
   }
 };
 
-module.exports = { login, create, updatePassword, updatePhoto, balance };
+const updateToken = async (req, res) => {
+  try {
+    const tokenHeader = req.headers.authorization;
+    const { token } = req.body;
+    if (!tokenHeader) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token non fourni." });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!tokenHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const customToken = tokenHeader.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res
+          .status(401)
+          .json({ status: "error", message: "TokenExpiredError" });
+      }
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token invalide." });
+    }
+
+    const customerId = decodedToken.id;
+    const existingCustomer = await Customer.findByPk(customerId);
+    if (!existingCustomer) {
+      return res.status(404).json({
+        status: "error",
+        message: "Ce compte n'existe pas.",
+      });
+    }
+
+    if (!token) {
+      return res.status(400).json({
+        status: "error",
+        message: "Veuillez fournir un token.",
+      });
+    }
+
+    await Customer.update(
+      { token },
+      {
+        where: { id: customerId },
+      }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Le token a été mis à jour avec succès.",
+    });
+  } catch (error) {
+    console.error(`ERROR UPDATE CUSTOMER TOKEN: ${error}`);
+    appendErrorLog(`ERROR UPDATE CUSTOMER TOKEN: ${error.message}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la mise à jours du mot de passe.",
+    });
+  }
+};
+
+module.exports = { login, create, updatePassword, updatePhoto, balance, updateToken };
