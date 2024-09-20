@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
+dotenv.config();
 const morgan = require("morgan");
 const helmet = require("helmet");
 const fs = require("fs");
@@ -39,9 +40,6 @@ admin.initializeApp({
 
 // Logger
 app.use(morgan("tiny"));
-
-// Init dotenv
-dotenv.config();
 
 // Middlewares
 app.use(cors());
@@ -128,7 +126,9 @@ app.use("/api/v1/transaction", transactions);
 server.listen(6881, () => {
   console.log("Le serveur est démarré sur le port 3000");
 }); */
-
+console.log("Twilio Account SID:", process.env.TWILIO_ACCOUNT_SID);
+console.log("Twilio Auth Token:", process.env.TWILIO_AUTH_TOKEN);
+console.log("Twilio Phone Number:", process.env.TWILIO_PHONE_NUMBER);
 // Export app
 const port = process.env.PORT || 3000;
 

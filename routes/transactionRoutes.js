@@ -1,8 +1,9 @@
 const express = require("express");
 const transactionController = require("../controllers/transactionController");
-const { verifyToken, isAdmin } = require("../middlewares/authMiddleware");
+const { verifyToken, isWorker } = require("../middlewares/authMiddleware");
 const router = express.Router();
 
-
+// RENDU MONAIS
+router.post("/render-money", verifyToken, isWorker, transactionController.renderMonais);
 
 module.exports = router;
