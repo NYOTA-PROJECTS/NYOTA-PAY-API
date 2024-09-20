@@ -3,7 +3,7 @@ const crypto = require('crypto');
 
 const generateTransactionCode = (transactionType) => {
   // Vérifier le type de transaction
-  if (!['EV', 'RT'].includes(transactionType)) {
+  if (!['SC', 'RC'].includes(transactionType)) {
     throw new Error('Type de transaction invalide. Utilisez "envoi" ou "retrait".');
   }
 

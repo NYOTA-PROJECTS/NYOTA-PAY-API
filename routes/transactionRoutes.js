@@ -6,4 +6,7 @@ const router = express.Router();
 // RENDU MONAIS
 router.post("/render-money", verifyToken, isWorker, transactionController.renderMonais);
 
+// RECEIVE MONAIS
+router.post("/receive-money", verifyToken, isWorker, transactionController.receiveMonais);
+
 module.exports = router;
