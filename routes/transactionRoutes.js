@@ -12,4 +12,7 @@ router.post("/receive-money", verifyToken, isWorker, transactionController.recei
 // UPDATE TRANSACTION AMOUNT
 router.put("/update-amount", verifyToken, isWorker, transactionController.updateTransactionAmount);
 
+// GET SESSION SUMMARY
+router.get("/session-summary", verifyToken, isWorker, transactionController.getSessionSummary);
+
 module.exports = router;

@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { Customer, Merchant, CashRegister, Worker, CashRegisterBalance, CustomerBalance, Transaction } = require("../models");
+const { Customer, Merchant, CashRegister, Worker, CashRegisterBalance, CustomerBalance, Transaction, WorkerSession } = require("../models");
 const { sequelize } = require("../models");
+const { Op } = require("sequelize");
 const admin = require("firebase-admin");
 const { appendErrorLog } = require("../utils/logging");
 const { generateTransactionCode } = require("../utils/transactionCodeGenerator");
@@ -455,15 +456,15 @@ const updateTransactionAmount = async (req, res) => {
 
     const { customerId, cashRegisterId, amount: oldAmount, createdAt, Customer: customer } = existingTransaction;
 
-    // Vérifier si la transaction a été créée il y a moins de 5 minutes
-    const now = new Date();
-    const transactionTime = new Date(createdAt);
-    const timeDiffInMinutes = (now - transactionTime) / 1000 / 60; // Convertir en minutes
+    // Vérifier si une session est déjà ouverte
+    const existingSession = await WorkerSession.findOne({
+      where: { workerId, endTime: null },
+    });
 
-    if (timeDiffInMinutes > 5) {
-      return res.status(403).json({
+    if (!existingSession) {
+      return res.status(400).json({
         status: "error",
-        message: "Vous ne pouvez modifier que les transactions éffectuées il y a moins de 5 minutes.",
+        message: "Aucune session en cours. Veuillez ouvrir une nouvelle session afin de modifier le montant.",
       });
     }
 
@@ -601,5 +602,110 @@ const updateTransactionAmount = async (req, res) => {
   }
 };
 
+const getSessionSummary = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    
+    if (!token) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token non fourni.",
+      });
+    }
 
-module.exports = { renderMonais, receiveMonais, updateTransactionAmount };
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const workerToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ status: "error", message: "Token invalide." });
+    }
+
+    const workerId = decodedToken.id;
+    const worker = await Worker.findOne({ where: { id: workerId } });
+
+    if (!worker) {
+      return res.status(404).json({
+        status: "error",
+        message: "Cet utilisateur n'existe pas.",
+      });
+    }
+
+    // Récupérer la session de travail active (session sans endTime)
+    const workerSession = await WorkerSession.findOne({
+      where: {
+        workerId: workerId,
+        endTime: null,  // Session encore active
+      },
+    });
+
+    if (!workerSession) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucune session active trouvée pour cet utilisateur.",
+      });
+    }
+
+    // Récupérer le montant initial à l'ouverture de la session
+    const initialBalance = workerSession.initialBalance;
+
+    // Récupérer toutes les transactions de la session courante
+    const transactions = await Transaction.findAll({
+      where: {
+        workerId: workerId,
+        cashRegisterId: workerSession.cashRegisterId,
+        createdAt: {
+          [Op.gte]: workerSession.startTime, // Après le début de la session
+        },
+      },
+    });
+
+    // Calculer les montants totaux
+    const totalSend = transactions
+      .filter(transaction => transaction.type === "SEND")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    const totalCollect = transactions
+      .filter(transaction => transaction.type === "COLLECT")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    const totalCommission = transactions
+      .reduce((sum, transaction) => sum + (transaction.commission || 0), 0);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        initialBalance: formatAmount(initialBalance, false),
+        totalSend: formatAmount(totalSend, false),
+        totalCollect: formatAmount(totalCollect, false),
+        totalCommission: formatAmount(totalCommission, true),
+      },
+    });
+  } catch (error) {
+    console.error(`ERROR GETTING SESSION SUMMARY: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la récupération des informations de session.",
+    });
+  }
+};
+
+function formatAmount(amount, keepDecimals) {
+  if (keepDecimals) {
+    return parseFloat(amount.toFixed(2));
+  }
+  return Math.round(amount); // Retourne l'entier le plus proche
+}
+
+
+module.exports = { renderMonais, receiveMonais, updateTransactionAmount, getSessionSummary };

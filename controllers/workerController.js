@@ -1287,6 +1287,7 @@ const getWorkerTransactions = async (req, res) => {
           attributes: ["id", "name"],
         },
       ],
+      order: [["updatedAt", "DESC"]],
     });
 
     return res.status(200).json({
