@@ -11,6 +11,35 @@ const renderMonais = async (req, res) => {
   try {
     const token = req.headers.authorization;
     const { merchantId, cashRegisterId, phone, amount } = req.body;
+
+    if (!amount) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le montant est requis.",
+      });
+    }
+
+    if (!cashRegisterId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant de la caisse est requis.",
+      });
+    }
+
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le numéro de portable est requis.",
+      });
+    }
+
     if (!token) {
       return res
         .status(401)
@@ -139,23 +168,25 @@ const renderMonais = async (req, res) => {
     // Envoyer une notification ou un SMS en fonction de la valeur de isMobile
     if (customer.isMobile === true) {
       // Envoi d'une notification via Firebase Cloud Messaging
-      const message = {
-        token: customer.token,
-        notification: {
-          title: "Transaction réussie",
-          body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA.`,
-        },
-      };
-
-      admin
-        .messaging()
-        .send(message)
-        .then((response) => {
-          console.log("Notification envoyée:", response);
-        })
-        .catch((error) => {
-          console.error("Erreur lors de l'envoi de la notification:", error);
-        });
+      if (customer.token) {
+        const message = {
+          token: customer.token,
+          notification: {
+            title: "Transaction réussie",
+            body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA.`,
+          },
+        };
+  
+        admin
+          .messaging()
+          .send(message)
+          .then((response) => {
+            console.log("Notification envoyée:", response);
+          })
+          .catch((error) => {
+            console.error("Erreur lors de l'envoi de la notification:", error);
+          });
+      }
     } else {
       // Envoi d'un SMS via Twilio
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -217,17 +248,16 @@ const receiveMonais = async (req, res) => {
     }
 
     if (!password) {
-      return res.status(400).json({ status: "error", message: "Le mot de passe est requis." });
+      return res.status(400).json({
+        status: "error",
+        message: "Le client doit saisir sont mot de passe afin de pouvoir comfirmer la transaction.",
+      });
     }
 
     const workerId = decodedToken.id;
     const worker = await Worker.findByPk(workerId);
     if (!worker) {
       return res.status(400).json({ status: "error", message: "Ce compte utilisateur n'existe pas." });
-    }
-
-    if (!bcrypt.compareSync(password, worker.password)) {
-      return res.status(400).json({ status: "error", message: "Le mot de passe ne correspond pas." });
     }
 
     const merchant = await Merchant.findByPk(merchantId);
@@ -252,11 +282,15 @@ const receiveMonais = async (req, res) => {
 
     const customer = await Customer.findOne({
       where: { phone },
-      attributes: ["id", "phone", "firstName", "lastName", "token", "isMobile"],
+      attributes: ["id", "phone", "firstName", "lastName", "token", "isMobile", "password"],
     });
 
     if (!customer) {
       return res.status(404).json({ status: "error", message: "Le client n'existe pas." });
+    }
+
+    if (!bcrypt.compareSync(password, customer.password)) {
+      return res.status(400).json({ status: "error", message: "Mot de passe invalide ou ne correspond pas." });
     }
 
     const customerBalance = await CustomerBalance.findOne({
@@ -313,23 +347,26 @@ const receiveMonais = async (req, res) => {
     // Envoyer une notification ou un SMS en fonction de la valeur de isMobile
     if (customer.isMobile === true) {
       // Envoi d'une notification via Firebase Cloud Messaging
-      const message = {
-        token: customer.token,
-        notification: {
-          title: "Transaction réussie",
-          body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Votre solde restant est de ${customerBalance.amount} FCFA.`,
-        },
-      };
-
-      admin
-        .messaging()
-        .send(message)
-        .then((response) => {
-          console.log("Notification envoyée:", response);
-        })
-        .catch((error) => {
-          console.error("Erreur lors de l'envoi de la notification:", error);
-        });
+      // Envoie de la notification uniquement si le client a un token
+      if (customer.token) {
+        const message = {
+          token: customer.token,
+          notification: {
+            title: "Transaction réussie",
+            body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Votre solde restant est de ${customerBalance.amount} FCFA.`,
+          },
+        };
+  
+        admin
+          .messaging()
+          .send(message)
+          .then((response) => {
+            console.log("Notification envoyée:", response);
+          })
+          .catch((error) => {
+            console.error("Erreur lors de l'envoi de la notification:", error);
+          });
+      }
     } else {
       // Envoi d'un SMS via Twilio
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -362,4 +399,207 @@ const receiveMonais = async (req, res) => {
   }
 };
 
-module.exports = { renderMonais, receiveMonais };
+const updateTransactionAmount = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const token = req.headers.authorization;
+    const { transactionId, newAmount } = req.body;
+
+    if (!token) {
+      return res.status(401).json({ status: "error", message: "Token non fourni." });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const workerToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ status: "error", message: "Token invalide." });
+    }
+
+    const workerId = decodedToken.id;
+    const worker = await Worker.findOne({ where: { id: workerId } });
+
+    if (!worker) {
+      return res.status(404).json({
+        status: "error",
+        message: "Utilisateur non trouvé.",
+      });
+    }
+
+    // Récupérer la transaction existante
+    const existingTransaction = await Transaction.findByPk(transactionId, {
+      transaction,
+      include: [
+        { model: CashRegister, attributes: ['id'] },
+        { model: Customer, attributes: ['id', 'phone', 'firstName', 'lastName', 'isMobile', 'token'] }, // Inclure le token Firebase du client
+      ]
+    });
+
+    if (!existingTransaction) {
+      return res.status(404).json({
+        status: "error",
+        message: "Transaction non trouvée.",
+      });
+    }
+
+    const { customerId, cashRegisterId, amount: oldAmount, createdAt, Customer: customer } = existingTransaction;
+
+    // Vérifier si la transaction a été créée il y a moins de 5 minutes
+    const now = new Date();
+    const transactionTime = new Date(createdAt);
+    const timeDiffInMinutes = (now - transactionTime) / 1000 / 60; // Convertir en minutes
+
+    if (timeDiffInMinutes > 5) {
+      return res.status(403).json({
+        status: "error",
+        message: "Vous ne pouvez modifier que les transactions de moins de 5 minutes.",
+      });
+    }
+
+    const cashRegisterBalance = await CashRegisterBalance.findOne({
+      where: { cashregisterId: cashRegisterId },
+      lock: transaction.LOCK.UPDATE,
+      transaction,
+    });
+
+    if (!cashRegisterBalance) {
+      return res.status(404).json({
+        status: "error",
+        message: "Le solde de la caisse n'existe pas.",
+      });
+    }
+
+    const customerBalance = await CustomerBalance.findOne({
+      where: { customerId: customerId },
+      lock: transaction.LOCK.UPDATE,
+      transaction,
+    });
+
+    if (!customerBalance) {
+      return res.status(404).json({
+        status: "error",
+        message: "Le solde du client n'existe pas.",
+      });
+    }
+
+    // Déterminer si la transaction est de type 'SEND' ou 'COLLECT'
+    const isSend = existingTransaction.type === 'SEND';
+
+    // 1. Rembourser les anciens montants
+    if (isSend) {
+      // Pour SEND, on débite la caisse et crédite le client
+      cashRegisterBalance.amount = (parseFloat(cashRegisterBalance.amount) + parseFloat(oldAmount)).toFixed(2);
+      customerBalance.amount = (parseFloat(customerBalance.amount) - parseFloat(oldAmount)).toFixed(2);
+    } else {
+      // Pour COLLECT, on crédite la caisse et débite le client
+      cashRegisterBalance.amount = (parseFloat(cashRegisterBalance.amount) - parseFloat(oldAmount)).toFixed(2);
+      customerBalance.amount = (parseFloat(customerBalance.amount) + parseFloat(oldAmount)).toFixed(2);
+    }
+
+    // 2. Calculer le nouveau montant
+    let newAmountAfterCommission = newAmount;
+    let newCommission = 0;
+
+    // Appliquer la commission de 3.5% uniquement pour les transactions de type 'COLLECT'
+    if (!isSend) {
+      const commissionRate = 0.035;
+      newCommission = (parseFloat(newAmount) * commissionRate).toFixed(2);
+      newAmountAfterCommission = (parseFloat(newAmount) - newCommission).toFixed(2);
+    }
+
+    // 3. Appliquer les nouveaux montants
+    if (isSend) {
+      // SEND: on débite la caisse et crédite le client
+      cashRegisterBalance.amount = (parseFloat(cashRegisterBalance.amount) - parseFloat(newAmount)).toFixed(2);
+      customerBalance.amount = (parseFloat(customerBalance.amount) + parseFloat(newAmount)).toFixed(2);
+    } else {
+      // COLLECT: on crédite la caisse et débite le client
+      cashRegisterBalance.amount = (parseFloat(cashRegisterBalance.amount) + parseFloat(newAmountAfterCommission)).toFixed(2);
+      customerBalance.amount = (parseFloat(customerBalance.amount) - parseFloat(newAmount)).toFixed(2);
+    }
+
+    // Sauvegarder les nouveaux soldes
+    await cashRegisterBalance.save({ transaction });
+    await customerBalance.save({ transaction });
+
+    // Mettre à jour la transaction
+    existingTransaction.initAmount = oldAmount; // Sauvegarder l'ancien montant
+    existingTransaction.amount = newAmountAfterCommission; // Mettre à jour avec le nouveau montant après commission (si applicable)
+    existingTransaction.commission = newCommission; // Mettre à jour la commission (si applicable)
+    await existingTransaction.save({ transaction });
+
+    // Commit de la transaction
+    await transaction.commit();
+
+    // Envoi de la notification ou du SMS au client
+    if (customer.isMobile === true) {
+      // Envoi d'une notification via Firebase Cloud Messaging
+      if (customer.token) {
+        const message = {
+          token: customer.token,
+          notification: {
+            title: "Transaction modifiée",
+            body: `Votre transaction a été modifiée à ${newAmount} FCFA. Votre nouveau solde est de ${customerBalance.amount} FCFA.`,
+          },
+        };
+
+        admin
+          .messaging()
+          .send(message)
+          .then((response) => {
+            console.log("Notification envoyée:", response);
+          })
+          .catch((error) => {
+            console.error("Erreur lors de l'envoi de la notification:", error);
+          });
+      }
+    } else {
+      // Envoi d'un SMS via Twilio
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const client = require("twilio")(accountSid, authToken);
+      client.messages
+        .create({
+          body: `Votre transaction a été modifiée à ${newAmount} FCFA. Transaction N° ${existingTransaction.code}. Votre nouveau solde est de ${customerBalance.amount} FCFA.`,
+          from: "NYOTAPAY",
+          to: `+242${customer.phone}`,
+        })
+        .then((message) => console.log("SMS envoyé:", message.sid))
+        .catch((error) => {
+          console.error("Erreur lors de l'envoi du SMS:", error);
+        });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Le montant de la transaction a été modifié avec succès.",
+      data: {
+        oldAmount,
+        newAmount: newAmountAfterCommission,
+        commission: newCommission,
+      },
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error(`ERROR UPDATING TRANSACTION: ${error}`);
+    appendErrorLog(`ERROR UPDATING TRANSACTION: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la modification de la transaction.",
+    });
+  }
+};
+
+
+module.exports = { renderMonais, receiveMonais, updateTransactionAmount };

@@ -5,7 +5,8 @@ const path = require("path");
 const fs = require('fs-extra');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { Worker, Merchant, CashRegister, PointOfSale, WorkerSession, CashRegisterBalance, MerchantAdmin, Customer, CustomerBalance } = require("../models");
+const  { Op } = require("sequelize");
+const { Worker, Merchant, CashRegister, PointOfSale, WorkerSession, CashRegisterBalance, MerchantAdmin, Customer, CustomerBalance, Transaction } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 const { sequelize } = require("../models");
 
@@ -820,12 +821,12 @@ const scanCustomer = async (req, res) => {
     if (!customer) {
       return res.status(404).json({
         status: "error",
-        message: "Utilisateur non trouvé.",
+        message: "Compte client non trouvé veuillez crée un compte sur l'application.",
       });
     }
 
     const response = {
-      name: `${customer.firstname} ${customer.lastname}`,
+      name: `${customer.firstName} ${customer.lastName}`,
       phone: customer.phone,
     };
 
@@ -879,7 +880,7 @@ const getCustomerInfos = async (req, res) => {
       if (customer.firstName === null && customer.lastName === null) {
          return res.status(404).json({
            status: "error",
-           message: "Le client doit ce connecté à l'application mobile.",
+           message: "Pour réaliser cette opération, le client doit d'abord créer un compte et se connecter à son profil sur l'application mobile client.",
          })
       } 
 
@@ -1213,6 +1214,94 @@ const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, r
   await transporter.sendMail(mailOptions);
 };
 
+// Historique des transactions
+const getWorkerTransactions = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+
+    if (!token) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token non fourni.",
+      });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const workerToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token invalide ou expiré.",
+      });
+    }
+
+    const workerId = decodedToken.id;
+
+    // Récupérer la session active du Worker
+    const activeSession = await WorkerSession.findOne({
+      where: {
+        workerId,
+        endTime: null, // La session est active si endTime est NULL
+      },
+      include: [{ model: CashRegister, attributes: ["id", "name"] }],
+    });
+
+    if (!activeSession) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucune session active trouvée pour ce worker.",
+      });
+    }
+
+    // Récupérer toutes les transactions liées à ce worker et à cette session
+    const transactions = await Transaction.findAll({
+      where: {
+        workerId,
+        createdAt: {
+          [Op.gte]: activeSession.startTime, // Transactions faites depuis le début de la session
+        },
+      },
+      include: [
+        {
+          model: Customer,
+          attributes: ["id", "firstName", "lastName", "phone"],
+        },
+        {
+          model: Merchant,
+          attributes: ["id", "name"],
+        },
+        {
+          model: CashRegister,
+          attributes: ["id", "name"],
+        },
+      ],
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Transactions récupérées avec succès.",
+      data: transactions,
+    });
+  } catch (error) {
+    console.error(`Error fetching transactions: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur est survenue lors de la récupération des transactions.",
+    });
+  }
+};
 
 async function getCashRegisterBalance(token, cashRegisterId) {
   try {
@@ -1256,4 +1345,5 @@ module.exports = {
   getCashRegisterBalance,
   scanCustomer,
   getCustomerInfos,
+  getWorkerTransactions,
 };

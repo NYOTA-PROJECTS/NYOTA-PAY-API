@@ -64,6 +64,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
+      initAmount: {
+        type: Sequelize.DOUBLE,
+        allowNull: false,
+        defaultValue: 0
+      },
       commission: {
         type: Sequelize.DOUBLE,
         allowNull: false,

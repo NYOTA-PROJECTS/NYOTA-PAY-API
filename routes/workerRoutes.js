@@ -42,4 +42,8 @@ router.post("/scan-customer", verifyToken, isWorker, workerController.scanCustom
 // GET CUSTOMER DETAILS
 router.post("/customer-details", verifyToken, isWorker, workerController.getCustomerInfos);
 
+
+// HISTORIQUE DES TRANSACTIONS
+router.get('/transactions', verifyToken, isWorker,  workerController.getWorkerTransactions);
+
 module.exports = router

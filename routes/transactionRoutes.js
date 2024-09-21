@@ -9,4 +9,7 @@ router.post("/render-money", verifyToken, isWorker, transactionController.render
 // RECEIVE MONAIS
 router.post("/receive-money", verifyToken, isWorker, transactionController.receiveMonais);
 
+// UPDATE TRANSACTION AMOUNT
+router.put("/update-amount", verifyToken, isWorker, transactionController.updateTransactionAmount);
+
 module.exports = router;

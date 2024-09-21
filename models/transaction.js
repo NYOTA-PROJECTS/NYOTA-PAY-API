@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('SEND', 'COLLECT'),
       code: DataTypes.STRING,
       amount: DataTypes.DOUBLE,
+      initAmount: DataTypes.DOUBLE,
       commission: DataTypes.DOUBLE,
     },
     {
