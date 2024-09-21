@@ -463,7 +463,7 @@ const updateTransactionAmount = async (req, res) => {
     if (timeDiffInMinutes > 5) {
       return res.status(403).json({
         status: "error",
-        message: "Vous ne pouvez modifier que les transactions de moins de 5 minutes.",
+        message: "Vous ne pouvez modifier que les transactions éffectuées il y a moins de 5 minutes.",
       });
     }
 
