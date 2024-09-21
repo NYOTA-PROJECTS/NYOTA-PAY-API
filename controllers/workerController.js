@@ -908,9 +908,7 @@ const endSession = async (req, res) => {
   try {
     const token = req.headers.authorization;
     if (!token) {
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token non fourni." });
+      return res.status(401).json({ status: "error", message: "Token non fourni." });
     }
 
     if (!token.startsWith("Bearer ")) {
@@ -926,14 +924,7 @@ const endSession = async (req, res) => {
     try {
       decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
     } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res
-          .status(401)
-          .json({ status: "error", message: "TokenExpiredError" });
-      }
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token invalide." });
+      return res.status(401).json({ status: "error", message: "Token invalide." });
     }
 
     const workerId = decodedToken.id;
@@ -971,7 +962,7 @@ const endSession = async (req, res) => {
       where: { workerId, endTime: null },
       transaction,
     });
-    
+
     if (!currentSession) {
       return res.status(404).json({
         status: "error",
@@ -981,12 +972,7 @@ const endSession = async (req, res) => {
 
     // Mettre à jour la session avec l'heure de fermeture
     currentSession.endTime = new Date();
-    await currentSession.save(
-      {
-        fields: ["endTime"],
-        transaction
-      }
-    );
+    await currentSession.save({ fields: ["endTime"], transaction });
 
     // Récupérer le solde de la caisse
     const cashRegisterId = worker.Merchant.CashRegisters[0].id;
@@ -1002,25 +988,84 @@ const endSession = async (req, res) => {
       });
     }
 
+    // Récupérer toutes les transactions de la session courante
+    const transactions = await Transaction.findAll({
+      where: {
+        workerId: workerId,
+        createdAt: {
+          [Op.gte]: currentSession.startTime,
+        },
+      },
+      include: [
+        {
+          model: Customer,
+          attributes: ["id", "phone"],
+        },
+      ],
+      transaction,
+    });
+
+    // Calculer les montants totaux pour chaque type de transaction et la commission Nyota
+    const totalSend = transactions
+      .filter(transaction => transaction.type === 'SEND')
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    const totalCollect = transactions
+      .filter(transaction => transaction.type === 'COLLECT')
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    const totalCommission = transactions
+      .reduce((sum, transaction) => sum + (transaction.commission || 0), 0);
+
+    const nyotaCommission = transactions
+      .reduce((sum, transaction) => sum + (transaction.initAmount || 0), 0);
+
     // Créer un répertoire pour le marchand s'il n'existe pas
-    const merchantName = worker.Merchant.name.replace(/\s+/g, '_'); // Remplacer les espaces par des underscores
+    const merchantName = worker.Merchant.name.replace(/\s+/g, '_');
     const dirPath = path.join(__dirname, '../public/reports', merchantName);
-    
+
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    // Générer un PDF du solde
-    const pdfPath = await generateWorkerBalancePDF(worker, currentSession, cashRegisterBalance, dirPath);
+    // Générer un PDF du solde et des transactions
+    const pdfPath = await generateWorkerBalancePDF(
+      worker,
+      currentSession,
+      cashRegisterBalance,
+      dirPath,
+      transactions,
+      totalSend,
+      totalCollect,
+      totalCommission,
+      nyotaCommission
+    );
 
     // Envoyer le PDF au marchand
     const merchantAdminEmail = worker.Merchant.MerchantAdmins.map(admin => admin.email);
-    await sendEmailWithPDF(worker, currentSession, cashRegisterBalance, pdfPath, merchantAdminEmail);
+    await sendEmailWithPDF(worker, currentSession, cashRegisterBalance, pdfPath, merchantAdminEmail, totalSend, totalCollect, totalCommission, nyotaCommission);
 
     await transaction.commit();
+
     return res.status(200).json({
       status: "success",
-      message: "Session fermée et votre rapport à éte envoyé avec succès.",
+      data: {
+        initialBalance: currentSession.initialBalance,
+        totalSend: totalSend.toFixed(2),
+        totalCollect: totalCollect.toFixed(2),
+        totalCommission: totalCommission.toFixed(2),
+        nyotaCommission: nyotaCommission.toFixed(2),
+        transactions: transactions.map(tx => ({
+          id: tx.id,
+          type: tx.type,
+          phone: tx.Customer.phone,
+          amount: tx.amount,
+          initAmount: tx.initAmount,
+          commission: tx.commission,
+          code: tx.code,
+        })),
+      },
+      message: "Session fermée et votre rapport à été envoyé avec succès.",
     });
     
   } catch (error) {
@@ -1034,7 +1079,7 @@ const endSession = async (req, res) => {
   }
 };
 
-const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, dirPath) => {
+const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, dirPath, transactions, totalSend, totalCollect, totalCommission, nyotaCommission) => {
   const formattedEndTime = new Date(session.endTime).toLocaleString('fr-FR', {
     timeZone: 'Africa/Brazzaville',
     day: '2-digit',
@@ -1053,33 +1098,17 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
     minute: '2-digit',
   });
 
-  const logoPath = path.join(__dirname, '../assets', 'logo.png');
-  const logoWidth = 60;
-  const logoHeight = 60;
-
-  // Informations fictives supplémentaires
-  const openingBalance = 35788;
-  const virtualMoneyGiven = 9765;
-  const virtualMoneyReceived = 5000;
-  const nyotaCommission = -342;
-  const closingBalance = cashRegisterBalance.amount;
-  const physicalBalanceExcess = 4765;
-
-  // Exemple de transactions (remplacer par les vraies données)
-  const transactions = Array.from({ length: 20 }, (_, i) => ({
-    phone: `06648754${i}`, // Exemple de numéro de téléphone
-    moneyReceived: `${5000 + i * 100} FCFA`,
-    moneyGiven: `${3000 + i * 100} FCFA`
-  }));
-
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const doc = new PDFDocument({ size: 'A4' });
       const pdfPath = path.join(dirPath, `Rapport_${session.id}.pdf`);
       const writeStream = fs.createWriteStream(pdfPath);
       doc.pipe(writeStream);
 
       // Ajouter le logo
+      const logoPath = path.join(__dirname, '../assets', 'logo.png');
+      const logoWidth = 60;
+      const logoHeight = 60;
       doc.image(logoPath, 60, 30, { width: logoWidth, height: logoHeight });
 
       doc.moveDown(5);
@@ -1094,12 +1123,12 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
       doc.moveDown(1);
 
       // Informations de solde
-      doc.text(`Solde à l’ouverture: ${openingBalance} FCFA`);
-      doc.text(`Monnaie virtuelle rendue: ${virtualMoneyGiven} FCFA`);
-      doc.text(`Monnaie virtuelle encaissée: ${virtualMoneyReceived} FCFA`);
-      doc.text(`Commission Nyota sur monnaie virtuelle encaissée: ${nyotaCommission} FCFA`);
-      doc.text(`Solde à la fermeture: ${closingBalance} FCFA`);
-      doc.text(`Solde physique de la caisse excédentaire de: ${physicalBalanceExcess} FCFA`);
+      doc.text(`Solde à l’ouverture: ${session.initialBalance} FCFA`);
+      doc.text(`Monnaie virtuelle rendue (SEND): ${totalSend} FCFA`);
+      doc.text(`Monnaie virtuelle encaissée (COLLECT): ${totalCollect} FCFA`);
+      doc.text(`Commission totale: ${totalCommission} FCFA`);
+      doc.text(`Commission Nyota: ${nyotaCommission} FCFA`);
+      doc.text(`Solde à la fermeture: ${cashRegisterBalance.amount} FCFA`);
       doc.moveDown(1);
 
       // Relevé de transaction
@@ -1115,9 +1144,9 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
       const pageBottomMargin = doc.page.height - 50;
 
       const renderTableHeader = () => {
-        doc.fontSize(12).text('Téléphone Client', col1X, tableTop);
-        doc.text('Monnaie Reçue', col2X, tableTop);
-        doc.text('Monnaie Rendue', col3X, tableTop);
+        doc.fontSize(12).text('Téléphone client', col1X, tableTop, { underline: true });
+        doc.text('Montant', col2X, tableTop, { underline: true });
+        doc.text('Commission Nyota', col3X, tableTop, { underline: true });
       };
 
       // Afficher les en-têtes du tableau
@@ -1127,8 +1156,6 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
 
       // Affichage des transactions avec gestion du saut de page
       transactions.forEach((transaction, index) => {
-        if (index >= 20) return; // Afficher seulement les 20 premières transactions
-
         // Si l'espace restant est insuffisant pour un élément, on passe à la page suivante
         if (tableY + itemHeight > pageBottomMargin) {
           doc.addPage(); // Ajouter une nouvelle page
@@ -1137,9 +1164,9 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
           tableY += itemHeight;
         }
 
-        doc.fontSize(10).text(transaction.phone, col1X, tableY);
-        doc.text(transaction.moneyReceived, col2X, tableY);
-        doc.text(transaction.moneyGiven, col3X, tableY);
+        doc.fontSize(10).text(transaction.Customer.phone, col1X, tableY);
+        doc.text(`${transaction.amount.toFixed(2)} FCFA`, col2X, tableY);
+        doc.text(`${transaction.commission ? transaction.commission.toFixed(2) : 0} FCFA`, col3X, tableY);
         tableY += itemHeight;
       });
 
@@ -1155,8 +1182,7 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
   });
 };
 
-// Fonction pour envoyer un e-mail avec le PDF en pièce jointe
-const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, recipientEmail) => {
+const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, recipientEmail, totalSend, totalCollect, totalCommission, nyotaCommission) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_SMTP,
     port: process.env.EMAIL_PORT,
@@ -1185,14 +1211,25 @@ const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, r
     minute: '2-digit',
   });
 
+  // Construire le corps de l'e-mail avec les informations calculées
   const emailBody = `
-    Hello!
+    Bonjour,
 
-    Ci-joint le ticket Z de la caisse n°${worker.Merchant.CashRegisters[0].id} du ${formattedEndTime.split(' ')[0]}.
+    Voici les détails du ticket Z de la caisse n°${worker.Merchant.CashRegisters[0].id} du ${formattedEndTime.split(' ')[0]} :
 
-    Date de début: ${formattedStartTime}
-    Date de fin: ${formattedEndTime}
-    Caissier(ère): ${worker.name}
+    - **Date de début :** ${formattedStartTime}
+    - **Date de fin :** ${formattedEndTime}
+    - **Caissier(ère) :** ${worker.name}
+
+    **Détails financiers de la session** :
+    - **Solde initial de la caisse :** ${session.initialBalance.toFixed(2)} FCFA
+    - **Total des transactions SEND :** ${totalSend.toFixed(2)} FCFA
+    - **Total des transactions COLLECT :** ${totalCollect.toFixed(2)} FCFA
+    - **Total des commissions :** ${totalCommission.toFixed(2)} FCFA
+    - **Commission Nyota (somme des initAmount) :** ${nyotaCommission.toFixed(2)} FCFA
+    - **Solde actuel de la caisse :** ${cashRegisterBalance.amount.toFixed(2)} FCFA
+
+    Vous trouverez ci-joint le rapport détaillé des transactions pour cette session.
 
     Cordialement,
     ${worker.Merchant.name}
@@ -1200,7 +1237,7 @@ const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, r
 
   const mailOptions = {
     from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
-    to: 'rubensalban@gmail.com',
+    to: recipientEmail,
     subject: `Ticket Z de la caisse n°${worker.Merchant.CashRegisters[0].id} - ${formattedEndTime.split(' ')[0]}`,
     text: emailBody,
     attachments: [
