@@ -71,7 +71,7 @@ app.use(
 app.use(
   permissionsPolicy({
     features: {
-      payment: ["self", '"nyota-apps.com"'],
+      payment: ["self", '"nyota-api.com"'],
       syncXhr: [],
     },
   })
