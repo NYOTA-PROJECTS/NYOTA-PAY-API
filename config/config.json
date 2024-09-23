@@ -1,0 +1,29 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "Admin@Casino2024",
+    "database": "database_nyotapay_dev",
+    "host": "194.163.180.27",
+    "dialect": "postgres",
+    "port": 5432,
+    "timezone": "Africa/Brazzaville"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "Admin@Casino2024",
+    "database": "database_nyotapay_test",
+    "host": "194.163.180.27",
+    "dialect": "postgres",
+    "port": 5432,
+    "timezone": "Africa/Brazzaville"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "Admin@Casino2024",
+    "database": "database_nyotapay_prod",
+    "host": "194.163.180.27",
+    "dialect": "postgres",
+    "port": 5432,
+    "timezone": "Africa/Brazzaville"
+  }
+}
