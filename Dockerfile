@@ -1,4 +1,4 @@
-# Utiliser l'image de base node.js
+# Utiliser l'image de base Node.js version 18
 FROM node:18-alpine
 
 # Créer un répertoire pour l'application
@@ -6,25 +6,22 @@ WORKDIR /app
 
 # Copier les fichiers de l'application dans l'image
 COPY package*.json ./
-COPY . .
 
 # Installer les dépendances de l'application
 RUN npm install
-RUN npm install pm2
+
+# Installer PM2 et Sequelize-CLI globalement
+RUN npm install pm2 -g
 RUN npm install sequelize-cli -g
 
-# Execution des migrations de base de donne de l'application
-CMD npx sequelize-cli db:migrate --env production
-CMD npx sequelize-cli db:migrate --env development
-CMD npx sequelize-cli db:migrate --env test
+# Copier le reste des fichiers de l'application
+COPY . .
 
-# Lancer les seeder
-CMD npx sequelize-cli db:seed:all --env production
-CMD npx sequelize-cli db:seed:all --env development
-CMD npx sequelize-cli db:seed:all --env test
-
-# Exposer le port utilisé par l'application
+# Exposer le port utilisé par l'application à l'intérieur du conteneur (selon le fichier .env)
 EXPOSE 6880
 
-# Lancer l'application
-CMD ["npm", "start"]
+# Lier PM2 à pm2.io pour la surveillance
+RUN pm2 link zhcwvfd0dobb3ai hq16qni2feawztk
+
+# Script de démarrage : exécuter migrations, seeders et lancer l'application avec PM2
+CMD ["sh", "-c", "npx sequelize-cli db:migrate --env production && npx sequelize-cli db:seed:all --env production && pm2-runtime start ecosystem.config.js --env production"]
