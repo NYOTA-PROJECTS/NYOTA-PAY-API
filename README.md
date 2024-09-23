@@ -1,5 +1,6 @@
 # API NYOTA PAY
 ## PORT:`6880`
+## URL: `https://apinyotapay.nyota-api.com/api/v1`
 
 ## ADMIN
 <details>
