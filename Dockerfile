@@ -25,7 +25,7 @@ RUN npm install pm2 -g
 ENV PM2_PUBLIC_KEY hq16wni2feawztk
 ENV PM2_SECRET_KEY zhcwvfd8dobb3ai
 
-CMD ["pm2-runtime", "app.js"]
+CMD ["pm2-runtime", "app.js --name nyotapay --env production"]
 
 # Script de démarrage : exécuter migrations, seeders et lancer l'application avec PM2
 # CMD ["sh", "-c", "npx sequelize-cli db:migrate --env production && pm2 start app.js --env production"]
