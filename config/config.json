@@ -2,7 +2,7 @@
   "development": {
     "username": "postgres",
     "password": "Admin@Casino2024",
-    "database": "database_nyotapay_dev",
+    "database": "nyotapay_dev",
     "host": "194.163.180.27",
     "dialect": "postgres",
     "port": 5432,
@@ -11,7 +11,7 @@
   "test": {
     "username": "postgres",
     "password": "Admin@Casino2024",
-    "database": "database_nyotapay_test",
+    "database": "nyotapay_test",
     "host": "194.163.180.27",
     "dialect": "postgres",
     "port": 5432,
@@ -20,7 +20,7 @@
   "production": {
     "username": "postgres",
     "password": "Admin@Casino2024",
-    "database": "database_nyotapay_prod",
+    "database": "nyotapay_prod",
     "host": "194.163.180.27",
     "dialect": "postgres",
     "port": 5432,
