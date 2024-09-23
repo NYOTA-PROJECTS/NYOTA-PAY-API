@@ -21,7 +21,7 @@ COPY . .
 EXPOSE 6880
 
 # Lier PM2 à pm2.io pour la surveillance
-RUN pm2 link zhcwvfd0dobb3ai hq16qni2feawztk
+RUN pm2 link zhcwvfd8dobb3ai hq16wni2feawztk
 
 # Script de démarrage : exécuter migrations, seeders et lancer l'application avec PM2
 CMD ["sh", "-c", "npx sequelize-cli db:migrate --env production && npx sequelize-cli db:seed:all --env production && pm2-runtime start ecosystem.config.js --env production"]
