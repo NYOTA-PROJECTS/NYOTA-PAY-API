@@ -21,7 +21,11 @@ COPY . .
 EXPOSE 6880
 
 # Lier PM2 à pm2.io pour la surveillance
-RUN pm2 link zhcwvfd8dobb3ai hq16wni2feawztk
+RUN npm install pm2 -g
+ENV PM2_PUBLIC_KEY hq16wni2feawztk
+ENV PM2_SECRET_KEY zhcwvfd8dobb3ai
+
+CMD ["pm2-runtime", "app.js"]
 
 # Script de démarrage : exécuter migrations, seeders et lancer l'application avec PM2
-CMD ["sh", "-c", "npx sequelize-cli db:migrate --env production && pm2 start app.js --env production"]
+# CMD ["sh", "-c", "npx sequelize-cli db:migrate --env production && pm2 start app.js --env production"]
