@@ -10,4 +10,4 @@ services:
       NODE_ENV: production
     env_file:
       - .env
-    command: ["sh", "-c", "npx sequelize-cli db:migrate --env production && npx sequelize-cli db:seed:all --env production && pm2 start app.js --env production"]
+    command: ["sh", "-c", "npx sequelize-cli db:migrate --env production && pm2 start app.js --env production"]
