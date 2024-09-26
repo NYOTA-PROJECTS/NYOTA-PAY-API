@@ -13,6 +13,9 @@ router.post("/create", customerController.create);
 // UPDATE PASSWORD
 router.put("/update-password", verifyToken, isCustomer, customerController.updatePassword);
 
+// UPDATE NAME
+router.put("/update-name", verifyToken, isCustomer, customerController.updateName);
+
 // UPDATE PROFILE PHOTO
 router.put("/update-photo", verifyToken, isCustomer, upload.single("photo"), customerController.updatePhoto);
 

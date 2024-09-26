@@ -301,7 +301,7 @@ const updatePassword = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         status: "error",
-        message: "Mot de passe invalide ou incorrect. Veuillez réessayer.",
+        message: "Mot de passe invalide ou ne corresponde pas. Veuillez réessayer.",
       });
     }
 
@@ -310,7 +310,7 @@ const updatePassword = async (req, res) => {
     await customer.update({ password: hashedPassword });
     return res.status(200).json({
       status: "success",
-      message: "Mot de passe mis à jour avec succes.",
+      message: "Votre mot de passe à été mis à jour avec succes.",
     });
   } catch (error) {
     console.error(`ERROR UPDATE PASSWORD CUSTOMER: ${error}`);
@@ -397,9 +397,18 @@ const updatePhoto = async (req, res) => {
     );
 
     await customer.update({ photo: imageUrl }, { where: { id: customerId } });
+
+    await customer.update({ thumbnail: thumbnailUrl }, { where: { id: customerId } });
+
+    const url = {
+      photo: imageUrl,
+      thumbnail: thumbnailUrl,
+    };
+    
     return res.status(200).json({
       status: "success",
       message: "Votre photo de profil a éte mise à jour avec succes.",
+      data: url,
     });
   } catch (error) {
     console.error(`ERROR UPDATE PHOTO CUSTOMER: ${error}`);
@@ -551,4 +560,83 @@ const updateToken = async (req, res) => {
   }
 };
 
-module.exports = { login, create, updatePassword, updatePhoto, balance, updateToken };
+const updateName = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    const { firstName, lastName } = req.body;
+
+    // Récupérer le worker et vérifier s'il existe
+    if (!token) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token non fourni." });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const customToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res
+          .status(401)
+          .json({ status: "error", message: "TokenExpiredError" });
+      }
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token invalide." });
+    }
+
+    const customerId = decodedToken.id;
+
+    const customer = await Customer.findByPk(customerId);
+    if (!customer) {
+      return res.status(404).json({
+        status: "error",
+        message:
+          "Compte non trouvé. Veuillez réessayer ou en créer un nouveau.",
+      });
+    }
+
+    if (!firstName) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le prénom actuel est requis.",
+      });
+    }
+
+    if (!lastName) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le nom est requis.",
+      });
+    }
+
+    await customer.update({ firstName, lastName });
+    return res.status(200).json({
+      status: "success",
+      message: "Votre mot de passe à été mis à jour avec succes.",
+      data: { firstName,  lastName }
+    });
+  } catch (error) {
+    console.error(`ERROR UPDATE PASSWORD CUSTOMER: ${error}`);
+    appendErrorLog(`ERROR UPDATE PASSWORD CUSTOMER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la mise à jour du mot de passe.",
+    });
+  }
+};
+
+module.exports = { login, create, updatePassword, updatePhoto, balance, updateToken, updateName };
