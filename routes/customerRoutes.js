@@ -25,4 +25,10 @@ router.get("/balance", verifyToken, isCustomer, customerController.balance);
 // UPDATE TOKEN NOTIFICATION
 router.put("/update-token", verifyToken, isCustomer, customerController.updateToken);
 
+// HISTORIQUE DES TRANSACTIONS
+router.get('/transactions', verifyToken, isCustomer,  customerController.getCustomerTransactions);
+
+// SUPPRIMER LE COMPTE
+router.delete("/delete-account", verifyToken, isCustomer, customerController.destroy);
+
 module.exports = router;

@@ -1286,6 +1286,18 @@ const getWorkerTransactions = async (req, res) => {
 
     const workerId = decodedToken.id;
 
+    // Récupérer le worker et vérifier s'il existe
+    const worker = await Worker.findOne({
+      where: { id: workerId },
+    });
+
+    if (!worker) {
+      return res.status(404).json({
+        status: "error",
+        message: "L'utilisateur non trouvé.",
+      });
+    }
+
     // Récupérer la session active du Worker
     const activeSession = await WorkerSession.findOne({
       where: {
@@ -1334,6 +1346,7 @@ const getWorkerTransactions = async (req, res) => {
     });
   } catch (error) {
     console.error(`Error fetching transactions: ${error}`);
+    appendErrorLog(`Error fetching transactions: ${error}`);
     return res.status(500).json({
       status: "error",
       message: "Une erreur est survenue lors de la récupération des transactions.",
@@ -1360,10 +1373,12 @@ async function getCashRegisterBalance(token, cashRegisterId) {
       return null;
     }
     console.error(`workerId: ${workerId}, cashRegisterId: ${cashRegisterId}`);
+    appendErrorLog(`workerId: ${workerId}, cashRegisterId: ${cashRegisterId}`);
     // Retourner le solde
     return cashRegister.CashRegisterBalance.amount;
   } catch (error) {
     console.error(`Error fetching worker balance: ${error}`);
+    appendErrorLog(`Error fetching worker balance: ${error}`);
     return null;
   }
 }

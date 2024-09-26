@@ -2,8 +2,14 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const path = require("path");
 const sharp = require("sharp");
+const moment = require("moment");
 const { v4: uuidv4 } = require("uuid");
-const { Customer, CustomerBalance } = require("../models");
+const {
+  Customer,
+  CustomerBalance,
+  Transaction,
+  Merchant,
+} = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 
 const login = async (req, res) => {
@@ -301,7 +307,8 @@ const updatePassword = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         status: "error",
-        message: "Mot de passe invalide ou ne corresponde pas. Veuillez réessayer.",
+        message:
+          "Mot de passe invalide ou ne corresponde pas. Veuillez réessayer.",
       });
     }
 
@@ -398,13 +405,16 @@ const updatePhoto = async (req, res) => {
 
     await customer.update({ photo: imageUrl }, { where: { id: customerId } });
 
-    await customer.update({ thumbnail: thumbnailUrl }, { where: { id: customerId } });
+    await customer.update(
+      { thumbnail: thumbnailUrl },
+      { where: { id: customerId } }
+    );
 
     const url = {
       photo: imageUrl,
       thumbnail: thumbnailUrl,
     };
-    
+
     return res.status(200).json({
       status: "success",
       message: "Votre photo de profil a éte mise à jour avec succes.",
@@ -626,7 +636,7 @@ const updateName = async (req, res) => {
     return res.status(200).json({
       status: "success",
       message: "Votre mot de passe à été mis à jour avec succes.",
-      data: { firstName,  lastName }
+      data: { firstName, lastName },
     });
   } catch (error) {
     console.error(`ERROR UPDATE PASSWORD CUSTOMER: ${error}`);
@@ -639,4 +649,185 @@ const updateName = async (req, res) => {
   }
 };
 
-module.exports = { login, create, updatePassword, updatePhoto, balance, updateToken, updateName };
+const getCustomerTransactions = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+
+    if (!token) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token non fourni.",
+      });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const workerToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token invalide ou expiré.",
+      });
+    }
+
+    const customerId = decodedToken.id;
+
+    const customer = await Customer.findByPk(customerId);
+    if (!customer) {
+      return res.status(404).json({
+        status: "error",
+        message:
+          "Compte non trouvé. Veuillez réessayer ou en créant un nouveau.",
+      });
+    }
+
+    const transactions = await Transaction.findAll({
+      where: { customerId },
+      include: [
+        {
+          model: Merchant,
+          attributes: ["name", "photo"],
+        },
+      ],
+      attributes: ["amount", "createdAt", "type"],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const response = transactions.map((transaction) => {
+      const merchant = transaction.Merchant;
+
+      // Formater la date selon l'image (ex: "Aujourd'hui", "Hier" ou format complet)
+      const createdAt = moment(transaction.createdAt);
+      const now = moment();
+
+      let formattedDate;
+      if (createdAt.isSame(now, "day")) {
+        formattedDate = `Aujourd'hui, ${createdAt.format("HH:mm")}`;
+      } else if (createdAt.isSame(now.subtract(1, "days"), "day")) {
+        formattedDate = `Hier, ${createdAt.format("HH:mm")}`;
+      } else {
+        formattedDate = createdAt.format("DD MMM YYYY, HH:mm"); // Exemple: "16 juin 2024, 16:11"
+      }
+
+      // Déterminer le signe du montant en fonction du type de transaction
+      let formattedAmount = transaction.amount;
+      if (transaction.type === "SEND") {
+        formattedAmount = `+${transaction.amount}`;
+      } else if (transaction.type === "COLLECT") {
+        formattedAmount = `-${transaction.amount}`;
+      }
+
+      return {
+        name: merchant.name,
+        photo: merchant.photo,
+        amount: formattedAmount,
+        date: formattedDate,
+      };
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Transactions réussies.",
+      data: response,
+    });
+  } catch (error) {
+    console.error(`ERROR GET CUSTOMER TRANSACTIONS: ${error}`);
+    appendErrorLog(`ERROR GET CUSTOMER TRANSACTIONS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la recuperation des transactions.",
+    });
+  }
+};
+
+const destroy = async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token non fourni.",
+      });
+    }
+
+    // Vérifie si l'en-tête commence par "Bearer "
+    if (!token.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Format de token invalide.",
+      });
+    }
+
+    // Extrait le token en supprimant le préfixe "Bearer "
+    const workerToken = token.substring(7);
+    let decodedToken;
+
+    try {
+      decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token invalide ou expiré.",
+      });
+    }
+
+    const customerId = decodedToken.id;
+
+    const customer = await Customer.findByPk(customerId);
+    if (!customer) {
+      return res.status(404).json({
+        status: "error",
+        message:
+          "Compte non trouvé. Veuillez réessayer ou en créant un nouveau.",
+      });
+    }
+
+    const newPhone = `DELETED_${customer.phone}`;
+
+    await Customer.update(
+      {
+        phone: newPhone,
+      },
+      {
+        where: {
+          id: customerId,
+        },
+      }
+    );
+    return res.status(200).json({
+      status: "success",
+      message: "Compte supprimé.",
+    });
+  } catch (error) {
+    console.error(`ERROR DELETE CUSTOMER: ${error}`);
+    appendErrorLog(`ERROR DELETE CUSTOMER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la suppression du compte.",
+    });
+  }
+};
+
+module.exports = {
+  login,
+  create,
+  updatePassword,
+  updatePhoto,
+  balance,
+  updateToken,
+  updateName,
+  getCustomerTransactions,
+  destroy,
+};
