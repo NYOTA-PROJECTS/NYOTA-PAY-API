@@ -22,16 +22,6 @@ const upload = multer({
         }
         callback(null, true)
     },
-    /* fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png|gif|webp|jfif|avif|svg|tiff|tif|bmp/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error("Only .png, .jpg and .jpeg .gif .webp .jfif .avif .svg .tiff .tif .bmp format allowed!"));
-    } */
 });
 
 module.exports = upload;

@@ -1,13 +1,13 @@
 {
-    "type": "service_account",
-    "project_id": "casino-b1ed2",
-    "private_key_id": "258deb73b276a6e8b247176bf8d07e72b140a7f3",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCynEV5SOyOcjjF\nmzl+kRB56DiMtdfn06BrXIefE7qBu0pa9cJpmHW6ZLdDZn6Y6oKMGtyq7COKc11k\nhALro0sTJ1Bnr3B64NVwdAysoBxklCG2UCRk5aQuUtXnND/SKdYCEnnwJjc1e4wG\nccPZnWFSCPjtNaA+bPQDmTczeK3kl3QkVg0xB41/JJI1VwMO1C25doqoUscOdpZM\nqCZjf42125y+P4suKE/chD5M7EKE1OlK0geCfbeHWDRFrhNAlzZf2ZgIYO7q8/RW\ndVQb0aSbpA5Sk4KR0JjBRCBcN3n0WQrVEnZKHS5CjUrYTIiIWnWr7xNP0uF3w6LL\n2FXMPE3pAgMBAAECggEABt+QpNwzjj/DA4e3rLE0axyOoIuW5Wr1b2w+I9cEhF2K\nvPlcI+gkD6o0izl0gbn0kCOwfjtcGsXZwDZ8TkkYaIJIy9SqhXAFhrBQlIwMy6oP\nqg5neCKGMOorJRyToCjP/YBshNtToJFCkDTsjoFJ73g87BP2OLDEqybIQwjP2E4T\nSb+K8yxUTMnUNTL2tmSoTTSuv9srIKnLvTHueYL3cyUXHaYMERNo2fHFCpOfMsR5\nHTWeqXdpSkhoqRHPmaQQal4kqRkW/EBUClEmOmwLtgHdIXr2kzhf68Jju4jEjvPa\nAK7h0g119IUKPaOUvPR/6zEeL4O2Q923kOM/lDeSiQKBgQDa+geCpZwq03sDOPyP\nfTXONuwd9Whrgb46HOICQ/SWvrP87PggZIu1SLMFExHk3zxc7yU6yPECXdWRS4P5\nK1Im3UCY0RTvCBzBLIQjLrxnhd3iAlKdvGLoeBG+RFYMZ7/xr8bJu03pnVuna1AW\n9L+1vGe54Abfi+UddGK/OdrRVwKBgQDQzxHE8JfmHB5kp5PpybbeAE8mMtKBU8hb\nehxAmgRE6UuH/Wr5MGPEdrkq+tn7jUSDQTVw2jo1F3j/zqv2aIoUVrClJ7Cvj0TM\nK6YFUlvfsYdTj8mELkCA+F2tN0wAJ0CwvhMvaBtlvQxo45Bm9yiRRhw4r/Wly8t+\nyKh/R44SvwKBgAMbfTPLadXpvlsjWeInYrYUbXFXZC3yX2Kvuj1R/YyOFDvImRTM\nmHbwGyo9RQm8aTzgX+TfqRvhfQBc0/ibNsU6aopAnU1vDglnulBNf3rwmV91rPp0\nC+tEmOvcSGRQrJafafC+6bIg+4X6rd5FhtrrW4V1umM9tvieCDCyf3ptAoGAEQ4o\nzGY+cfwv+1a4vSrNtfpefKdADHI0dkxWDGzIFnzbv4LSfwIV1BFCdKFCtspGI1Zr\nMAmTIY0GRBa0cw784EZobUT9qIlSPD8Ac4TTnkTY4dlnw1UnzaD7vc87dPO/0+/i\nj0e4nSnA3rxfqhlcBemtGnA850rrFzL6mFLW5u8CgYAZ/qd5ahso0q7nf/iCWr4r\nKWn/r2MLGHYnpxQ64m9QK8YMCbrWuTK/peZu0Eqj3E0SgHgR9rGIZlULiS4TgLK4\nzJshzvqhExAd9V8ZspTXApNi+3/+QXliog0Y9I0A/vn7wFLtFPgFIvsv6+uvZ1Q8\nVHYfRt68XevecxQS1BMJ+w==\n-----END PRIVATE KEY-----\n",
-    "client_email": "firebase-adminsdk-yqns6@casino-b1ed2.iam.gserviceaccount.com",
-    "client_id": "110496049504251710583",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-yqns6%40casino-b1ed2.iam.gserviceaccount.com",
-    "universe_domain": "googleapis.com"
-  }
+  "type": "service_account",
+  "project_id": "nyota-837ed",
+  "private_key_id": "deaa6bd34c7f87526e92afa5b1b6c643288650aa",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLmuF6Nq/VBp7k\nkhwuMqEZgEiJOWzx9ghM2PvYE0qCfmQ91zdlBYIn/U9XE50ishn4+gt9F3+j49xe\nQT8jmn9F2F+6XUUiUGaF7TjNvGq9BUCdrE7gzELeD/G4rZRENfHWaMdpzTVdtagK\nOIhEXt5uNHOOFvxqglw+HQpcNIFMDwyLkx0ArY9rQ0/AIJTbZyOT/cz/+Gkh7Rzn\nHvhNjufdOOK2kRm5cCx36NNoN0n2P7vOfa1GZ43Pm6tflyN1FwEgdohJ3nP3tbYp\ntRIrtL36JLhKT5Ns7wm54ynJzxz6VK3NiupkQ6jcnssQO+cPY2hQUjbC6/TwqnKf\n8VzmhX1jAgMBAAECggEAIDpARW2BkHkPToO4FTHrYRN2p83gqj3022EfH/kRuq0R\n5d36hTGFhBnq5JAUt8i0Jr5Bckf1arYnC/5M5bBPQ/l3UZLw3fkW+UzuyFXyGUBL\nFYoQJDIAxZCFhONozBEz2enU4rDaKR6XXiLLovLXR19jCRMnWh6PRj+ng6fF7YlN\n1qKAdPn3CoG7JubOgNbR6zfrlaHluQdna0eEypeyNBNyPVhWmk0d0oHeE95v9C4G\nuZcXT2+lZFcF0+JtYHDuMQNRaILV6cVYXjIbO5lJVhRnGuGzNje021rKd4/iG50T\nESvA5ajvhxIvkunsbmQT11W3gcpzD2CbGlZwqmabwQKBgQDz6GsoCmxCKVWe0nQn\nso1av9BeyVsogKXdakI8uO6ZI1mq5A3WGwPkcjiMbdQkheMPvXAII/jOZncvRXhy\nFBLrQaoHERnILoO+Rh6RJGFcmudrZBw5mJX01ML+9Vj0rmlbLuQ5APVeRd9jD8uz\nFPm73/Zntqwmp37UxVwV6Y0fowKBgQDVsvRA7zxtafynknOLm+SQAZO9ODGyII2o\nCF65SGIMnl1EUI4ZZBDYZjzUigOx8RWWt4/mP1giYhx/Sa5Th+BsDFekjYtetotc\npj0Fux5l0UJtzPjMpavJ+433HsiqPXQJLvldCiwLrwzt8Met0cFQDtdNf8Tvt4C4\nWOwlDBEHQQKBgFEoohdVuIYfWOUbJBldeVmb/8q6d4G3pPlS9S1dX89HCvwpHE2E\n+buXIifgF7n7bv16zH948L5FLB1noVdcRJtRYzEsyIZqq92xWVR0ZY054g1C531m\nv2cTMLtDilEIg/gaV0h8gCjZWSaOR/qT3TFdqZEDIK9QBozoCucjqpi/AoGBAMbq\nM5e52IqUDFzC4pDCRGeTQDzycLe4u4L8f4eCC9ppErHDNfIGhfOYfujrqvLYUNsg\n9G5C6jvfDV2ibQVNxiVs+6utIVzBGEneZ5DNE0d9GJNyJuj/EUAKyqOLYQet+jOO\nKQlkrYkWoTdeV8/BHmrx1ZFK7Dqimct+4hi9+Z/BAoGAIXx91pxONsAM+xUOCOxU\nm+Vsumt7I0jy540wyCOVnsX43EWQ6rGP/DbO7Mo9ajgdOGbNJZbXfrQILFDvCS6b\nv7RA7n8GVMkrK2qAVEYSm9Abj+8g6FNCebNbjegk7ACXNoZXGODzWtd7ZP8tXDSV\nwJt334gZTXPce9EIb5Y5MXs=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-veciq@nyota-837ed.iam.gserviceaccount.com",
+  "client_id": "109102834261711626946",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-veciq%40nyota-837ed.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
