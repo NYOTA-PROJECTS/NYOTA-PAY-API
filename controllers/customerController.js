@@ -720,12 +720,15 @@ const getCustomerTransactions = async (req, res) => {
         formattedDate = createdAt.format("DD MMM YYYY, HH:mm"); // Exemple: "16 juin 2024, 16:11"
       }
 
+      // Arrondir le montant à 0 chiffre après la virgule
+      let roundedAmount = Math.round(transaction.amount); // ou transaction.amount.toFixed(0)
+
       // Déterminer le signe du montant en fonction du type de transaction
-      let formattedAmount = transaction.amount;
+      let formattedAmount = roundedAmount;
       if (transaction.type === "SEND") {
-        formattedAmount = `+${transaction.amount}`;
+        formattedAmount = `+${roundedAmount}`;
       } else if (transaction.type === "COLLECT") {
-        formattedAmount = `-${transaction.amount}`;
+        formattedAmount = `-${roundedAmount}`;
       }
 
       return {

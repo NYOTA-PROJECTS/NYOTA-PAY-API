@@ -2,6 +2,7 @@ const {
   Merchant,
   CashRegister,
   MerchantBalance,
+  CashRegisterBalance,
   PointOfSale,
 } = require("../models");
 const { sequelize } = require("../models");
@@ -104,7 +105,7 @@ const create = async (req, res) => {
     );
 
     const cashregister = await CashRegister.findOne({
-      where: { merchantId, merchantposId: posId, name }
+      where: { merchantId, merchantposId: posId, name },
     });
 
     if (cashregister) {
@@ -124,6 +125,13 @@ const create = async (req, res) => {
       { transaction }
     );
 
+    await CashRegisterBalance.create(
+      {
+        amount: 0,
+      },
+      { where: { id: cashregister.id }, transaction }
+    ),
+    
     await transaction.commit();
 
     return res.status(201).json({

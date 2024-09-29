@@ -27,7 +27,7 @@ admin.initializeApp({
 });
 
 // Logger
-app.use(morgan("tiny"));
+app.use(morgan("dev"));
 
 // Middlewares
 app.use(cors());

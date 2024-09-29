@@ -195,7 +195,7 @@ const renderMonais = async (req, res) => {
       const client = require("twilio")(accountSid, authToken);
       client.messages
         .create({
-          body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte.\n👉🏽 https://nyotapay.com/landingpage`,
+          body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte. 👉🏽 https://nyotapay.com/landingpage`,
           from: "NYOTAPAY",
           to: `+242${customer.phone}`,
         })
@@ -375,7 +375,7 @@ const receiveMonais = async (req, res) => {
       const client = require("twilio")(accountSid, authToken);
       client.messages
         .create({
-          body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte.\n👉🏽 https://nyotapay.com/landingpage`,
+          body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte. 👉🏽 https://nyotapay.com/landingpage`,
           from: "NYOTAPAY",
           to: `+242${customer.phone}`,
         })
