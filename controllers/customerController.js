@@ -9,6 +9,7 @@ const {
   CustomerBalance,
   Transaction,
   Merchant,
+  Category,
 } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 
@@ -823,6 +824,54 @@ const destroy = async (req, res) => {
   }
 };
 
+
+const getMerchants = async (req, res) => {
+  try {
+    const categories = await Category.findAll({
+      include: [{
+        model: Merchant,
+        attributes: ['name', 'cover', 'photo']
+      }]
+    });
+
+    if (!categories) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucune catégorie trouvée."
+      });
+    }
+
+    // Filtrer les catégories qui ont au moins un marchand
+    const filteredCategories = categories.filter(category => category.Merchants.length > 0);
+
+    // Transformer les catégories pour les rendre compatibles avec le frontend
+    const formattedCategories = filteredCategories.map(category => {
+      return {
+        categoryName: category.name,
+        merchants: category.Merchants.map(merchant => ({
+          name: merchant.name,
+          cover: merchant.cover,
+          photo: merchant.photo
+        }))
+      };
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Catégories et marchands récupérés avec succès.",
+      data: formattedCategories
+    });
+  } catch (error) {
+    console.error(`ERROR GET CUSTOMER TRANSACTIONS: ${error}`);
+    appendErrorLog(`ERROR GET CUSTOMER TRANSACTIONS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la recuperation des transactions.",
+    });
+  }
+}
+
 module.exports = {
   login,
   create,
@@ -833,4 +882,5 @@ module.exports = {
   updateName,
   getCustomerTransactions,
   destroy,
+  getMerchants
 };

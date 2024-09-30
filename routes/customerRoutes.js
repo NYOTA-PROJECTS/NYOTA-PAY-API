@@ -31,4 +31,7 @@ router.get('/transactions', verifyToken, isCustomer,  customerController.getCust
 // SUPPRIMER LE COMPTE
 router.delete("/delete-account", verifyToken, isCustomer, customerController.destroy);
 
+// LISTE DES MARCHANTS
+router.get("/all-merchants", verifyToken, isCustomer, customerController.getMerchants);
+
 module.exports = router;
