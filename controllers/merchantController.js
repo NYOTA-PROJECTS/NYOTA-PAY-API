@@ -140,11 +140,19 @@ const updatePhoto = async (req, res) => {
   try {
     const { merchantId } = req.body;
     const host = req.get("host");
+    const photo = req.file;
 
     if (!merchantId) {
       return res.status(400).json({
         status: "error",
         message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    if (!photo) {
+      return res.status(400).json({
+        status: "error",
+        message: "La photo du marchand est requise.",
       });
     }
 
@@ -182,11 +190,19 @@ const updateCover = async (req, res) => {
   try {
     const { merchantId } = req.body;
     const host = req.get("host");
+    const photo = req.file;
 
     if (!merchantId) {
       return res.status(400).json({
         status: "error",
         message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    if (!photo) {
+      return res.status(400).json({
+        status: "error",
+        message: "La photo du marchand est requise.",
       });
     }
 
