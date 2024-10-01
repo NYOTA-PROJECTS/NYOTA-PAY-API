@@ -168,18 +168,24 @@ module.exports = {
       },
       {
         id: 28,
-        name: 'Télécommunications',
+        name: 'Supermarché & supérette',
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         id: 29,
-        name: 'Tourisme et voyages',
+        name: 'Télécommunications',
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         id: 30,
+        name: 'Tourisme et voyages',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 31,
         name: 'Transport et logistique',
         createdAt: new Date(),
         updatedAt: new Date()
