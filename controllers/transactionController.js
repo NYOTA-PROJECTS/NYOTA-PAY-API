@@ -605,7 +605,7 @@ const updateTransactionAmount = async (req, res) => {
 const getSessionSummary = async (req, res) => {
   try {
     const token = req.headers.authorization;
-    
+
     if (!token) {
       return res.status(401).json({
         status: "error",
@@ -628,7 +628,10 @@ const getSessionSummary = async (req, res) => {
     try {
       decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
     } catch (error) {
-      return res.status(401).json({ status: "error", message: "Token invalide." });
+      return res.status(401).json({
+        status: "error",
+        message: "Token invalide.",
+      });
     }
 
     const workerId = decodedToken.id;
@@ -645,7 +648,7 @@ const getSessionSummary = async (req, res) => {
     const workerSession = await WorkerSession.findOne({
       where: {
         workerId: workerId,
-        endTime: null,  // Session encore active
+        endTime: null, // Session encore active
       },
     });
 
@@ -672,22 +675,25 @@ const getSessionSummary = async (req, res) => {
 
     // Calculer les montants totaux
     const totalSend = transactions
-      .filter(transaction => transaction.type === "SEND")
+      .filter((transaction) => transaction.type === "SEND")
       .reduce((sum, transaction) => sum + transaction.amount, 0);
 
     const totalCollect = transactions
-      .filter(transaction => transaction.type === "COLLECT")
+      .filter((transaction) => transaction.type === "COLLECT")
       .reduce((sum, transaction) => sum + transaction.amount, 0);
 
+    // Calculer la commission totale et ajouter 3,5%
     const totalCommission = transactions
       .reduce((sum, transaction) => sum + (transaction.commission || 0), 0);
+
+    const totalCollectCommission = totalCollect * 1.035; // Ajouter 3,5% à la commission
 
     return res.status(200).json({
       status: "success",
       data: {
         initialBalance: formatAmount(initialBalance, false),
         totalSend: formatAmount(totalSend, false),
-        totalCollect: formatAmount(totalCollect, false),
+        totalCollect: formatAmount(totalCollectCommission, false),
         totalCommission: formatAmount(totalCommission, true),
       },
     });
@@ -695,7 +701,8 @@ const getSessionSummary = async (req, res) => {
     console.error(`ERROR GETTING SESSION SUMMARY: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la récupération des informations de session.",
+      message:
+        "Une erreur s'est produite lors de la récupération des informations de session.",
     });
   }
 };
