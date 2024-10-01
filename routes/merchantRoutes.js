@@ -19,4 +19,7 @@ router.get("/all-details", verifyToken, isAdminOrMerchant, merchantController.ge
 // CREATION ADMIN MERCHANT
 router.post("/create-admin", verifyToken, isAdmin, merchantController.createAdmin);
 
+// RECHARGER LE SOLDE DU MARCHANT
+router.put("/recharge", verifyToken, isAdminOrMerchant, merchantController.recharge);
+
 module.exports = router

@@ -189,6 +189,18 @@ module.exports = {
         name: 'Transport et logistique',
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      {
+        id: 32,
+        name: 'Boulangerie, pâtisserie & salon de thé',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 33,
+        name: 'Fashion',
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ], {});
   },

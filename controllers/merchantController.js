@@ -111,7 +111,7 @@ const create = async (req, res) => {
       await PointOfSale.create(
         {
           merchantId: newMerchant.id,
-          urlLink: point.urlLink,
+          urlLink: point.link,
         },
         { transaction }
       );
@@ -371,4 +371,54 @@ const createAdmin = async (req, res) => {
   }
 };
 
-module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin };
+const recharge = async (req, res) => {
+  try {
+    const { merchantId, amount } = req.body;
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    if (!amount) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le montant est requis.",
+      });
+    }
+
+    const merchant = await Merchant.findOne({ where: { id: merchantId } });
+    if (!merchant) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le compte du marchand n'existe pas.",
+      });
+    }
+    // Calcul de la commission de 3,5%
+    const commissionRate = 0.035;
+    const commission = (parseFloat(amount) * commissionRate).toFixed(0);
+    const amountAfterCommission = (parseFloat(amount) - commission).toFixed(0);
+
+    // Mettre à jour le solde du marchand après déduction de la commission
+    await MerchantBalance.update(
+      { amount: sequelize.literal(`amount + ${amountAfterCommission}`) },
+      { where: { merchantId } }
+    );
+
+    // Répondre avec succès
+    return res.status(200).json({
+      status: "success",
+      message: `Le compte du marchand a bien été rechargé avec ${amountAfterCommission} FCFA après une déduction de commission de ${commission} FCFA.`,
+    });
+  } catch (error) {
+    console.error(`ERROR RECHARGING MERCHANT: ${error}`);
+    appendErrorLog(`ERROR RECHARGING MERCHANT: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recharge du compte du marchand.",
+    });
+  }
+}
+
+module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge };
