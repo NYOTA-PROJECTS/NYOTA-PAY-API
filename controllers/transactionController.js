@@ -1,9 +1,10 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { Customer, Merchant, CashRegister, Worker, CashRegisterBalance, CustomerBalance, Transaction, WorkerSession } = require("../models");
+const { Customer, Merchant, CashRegister, Worker, CashRegisterBalance, CustomerBalance, Transaction, WorkerSession, Admin } = require("../models");
 const { sequelize } = require("../models");
 const { Op } = require("sequelize");
 const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
 const { appendErrorLog } = require("../utils/logging");
 const { generateTransactionCode } = require("../utils/transactionCodeGenerator");
 
@@ -113,6 +114,41 @@ const renderMonais = async (req, res) => {
         status: "error",
         message: "Solde insuffisant dans la caisse.",
       });
+    }
+
+    // Vérifier si le solde est en dessous du seuil minimum
+    if (cashRegisterBalance.amount < cashRegister.minBalance) {
+      // Récupérer les informations de l'admin pour lui envoyer un e-mail
+      const admin = await Admin.findOne();
+      if (admin) {
+        const transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_SMTP,
+          port: process.env.EMAIL_PORT,
+          secure: true,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        // Contenu de l'e-mail
+        const mailOptions = {
+          from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
+          to: admin.email, // Adresse e-mail de l'admin
+          subject: "Alerte : Solde minimum atteint",
+          text: `Le solde de la caisse ${cashRegister.name} appartenant au marchand ${merchant.name} a atteint le seuil minimum. Solde actuel : ${cashRegisterBalance.amount} FCFA, Seuil minimum : ${cashRegister.minBalance} FCFA.`,
+        };
+
+        // Envoyer l'e-mail
+        transporter.sendMail(mailOptions, function (error, info) {
+          if (error) {
+            console.log("Erreur lors de l'envoi de l'email:", error);
+            addErrorLog(`Erreur lors de l'envoi de l'email: ${error}`);
+          } else {
+            console.log("Email envoyé avec succès:", info.response);
+          }
+        });
+      }
     }
 
     const customer = await Customer.findOne({
@@ -341,6 +377,41 @@ const receiveMonais = async (req, res) => {
       },
       { transaction }
     );
+
+    // Vérifier si le solde est en dessous du seuil minimum
+    if (cashRegisterBalance.amount < cashRegister.minBalance) {
+      // Récupérer les informations de l'admin pour lui envoyer un e-mail
+      const admin = await Admin.findOne();
+      if (admin) {
+        const transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_SMTP,
+          port: process.env.EMAIL_PORT,
+          secure: true,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        // Contenu de l'e-mail
+        const mailOptions = {
+          from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
+          to: admin.email, // Adresse e-mail de l'admin
+          subject: "Alerte : Solde minimum atteint",
+          text: `Le solde de la caisse ${cashRegister.name} appartenant au marchand ${merchant.name} a atteint le seuil minimum. Solde actuel : ${cashRegisterBalance.amount} FCFA, Seuil minimum : ${cashRegister.minBalance} FCFA.`,
+        };
+
+        // Envoyer l'e-mail
+        transporter.sendMail(mailOptions, function (error, info) {
+          if (error) {
+            console.log("Erreur lors de l'envoi de l'email:", error);
+            addErrorLog(`Erreur lors de l'envoi de l'email: ${error}`);
+          } else {
+            console.log("Email envoyé avec succès:", info.response);
+          }
+        });
+      }
+    }
 
     // Commit de la transaction (valider les changements)
     await transaction.commit();
@@ -681,12 +752,11 @@ const getSessionSummary = async (req, res) => {
     const totalCollect = transactions
       .filter((transaction) => transaction.type === "COLLECT")
       .reduce((sum, transaction) => sum + transaction.amount, 0);
-
-    // Calculer la commission totale et ajouter 3,5%
+      
     const totalCommission = transactions
       .reduce((sum, transaction) => sum + (transaction.commission || 0), 0);
 
-    const totalCollectCommission = totalCollect * 1.035; // Ajouter 3,5% à la commission
+    const totalCollectCommission = totalCollect * 1.035;
 
     return res.status(200).json({
       status: "success",

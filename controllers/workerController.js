@@ -929,6 +929,7 @@ const endSession = async (req, res) => {
 
     const workerId = decodedToken.id;
 
+    // Trouver l'utilisateur et ses associations
     const worker = await Worker.findByPk(workerId, {
       include: {
         model: Merchant,
@@ -958,6 +959,7 @@ const endSession = async (req, res) => {
       });
     }
 
+    // Trouver la session en cours
     const currentSession = await WorkerSession.findOne({
       where: { workerId, endTime: null },
       transaction,
@@ -970,7 +972,7 @@ const endSession = async (req, res) => {
       });
     }
 
-    // Mettre à jour la session avec l'heure de fermeture
+    // Fermer la session (non bloquant, gestion manuelle si cela échoue)
     currentSession.endTime = new Date();
     await currentSession.save({ fields: ["endTime"], transaction });
 
@@ -988,7 +990,7 @@ const endSession = async (req, res) => {
       });
     }
 
-    // Récupérer toutes les transactions de la session courante
+    // Récupérer toutes les transactions pour la session
     const transactions = await Transaction.findAll({
       where: {
         workerId: workerId,
@@ -1005,7 +1007,7 @@ const endSession = async (req, res) => {
       transaction,
     });
 
-    // Calculer les montants totaux pour chaque type de transaction et la commission Nyota
+    // Calculs des montants
     const totalSend = transactions
       .filter(transaction => transaction.type === 'SEND')
       .reduce((sum, transaction) => sum + transaction.amount, 0);
@@ -1020,33 +1022,41 @@ const endSession = async (req, res) => {
     const nyotaCommission = transactions
       .reduce((sum, transaction) => sum + (transaction.initAmount || 0), 0);
 
-    // Créer un répertoire pour le marchand s'il n'existe pas
-    const merchantName = worker.Merchant.name.replace(/\s+/g, '_');
-    const dirPath = path.join(__dirname, '../public/reports', merchantName);
-
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-
-    // Générer un PDF du solde et des transactions
-    const pdfPath = await generateWorkerBalancePDF(
-      worker,
-      currentSession,
-      cashRegisterBalance,
-      dirPath,
-      transactions,
-      totalSend,
-      totalCollect,
-      totalCommission,
-      nyotaCommission
-    );
-
-    // Envoyer le PDF au marchand
-    const merchantAdminEmail = worker.Merchant.MerchantAdmins.map(admin => admin.email);
-    await sendEmailWithPDF(worker, currentSession, cashRegisterBalance, pdfPath, merchantAdminEmail, totalSend, totalCollect, totalCommission, nyotaCommission);
-
+    // Commit de la transaction pour finaliser la session
     await transaction.commit();
 
+    // Tâches non bloquantes après la validation de la transaction
+    (async () => {
+      try {
+        // Génération du PDF et envoi par email en arrière-plan
+        const merchantName = worker.Merchant.name.replace(/\s+/g, '_');
+        const dirPath = path.join(__dirname, '../public/reports', merchantName);
+
+        if (!fs.existsSync(dirPath)) {
+          fs.mkdirSync(dirPath, { recursive: true });
+        }
+
+        const pdfPath = await generateWorkerBalancePDF(
+          worker,
+          currentSession,
+          cashRegisterBalance,
+          dirPath,
+          transactions,
+          totalSend,
+          totalCollect,
+          totalCommission,
+          nyotaCommission
+        );
+
+        const merchantAdminEmail = worker.Merchant.MerchantAdmins.map(admin => admin.email);
+        await sendEmailWithPDF(worker, currentSession, cashRegisterBalance, pdfPath, merchantAdminEmail, totalSend, totalCollect, totalCommission, nyotaCommission);
+      } catch (error) {
+        console.error('Erreur lors de la génération du PDF ou de l\'envoi d\'email:', error);
+        appendErrorLog(`Erreur lors de la génération du PDF ou de l'envoi d'email: ${error}`);
+      }
+    })();
+
+    // Réponse immédiate
     return res.status(200).json({
       status: "success",
       data: {
@@ -1065,10 +1075,11 @@ const endSession = async (req, res) => {
           code: tx.code,
         })),
       },
-      message: "Session fermée et votre rapport à été envoyé avec succès.",
+      message: "Session fermée et votre rapport sera envoyé sous peu.",
     });
-    
+
   } catch (error) {
+    // En cas d'erreur, rollback de la transaction
     await transaction.rollback();
     console.error(`ERROR END SESSION: ${error}`);
     appendErrorLog(`ERROR END SESSION: ${error}`);
@@ -1078,6 +1089,7 @@ const endSession = async (req, res) => {
     });
   }
 };
+
 
 const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, dirPath, transactions, totalSend, totalCollect, totalCommission, nyotaCommission) => {
   const formattedEndTime = new Date(session.endTime).toLocaleString('fr-FR', {
