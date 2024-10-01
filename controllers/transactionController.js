@@ -14,40 +14,13 @@ const renderMonais = async (req, res) => {
     const token = req.headers.authorization;
     const { merchantId, cashRegisterId, phone, amount } = req.body;
 
-    if (!amount) {
+    if (!amount || !cashRegisterId || !merchantId || !phone || !token) {
       return res.status(400).json({
         status: "error",
-        message: "Le montant est requis.",
+        message: "Les champs montant, identifiant de la caisse, identifiant du marchand, téléphone et token sont requis.",
       });
     }
 
-    if (!cashRegisterId) {
-      return res.status(400).json({
-        status: "error",
-        message: "L'identifiant de la caisse est requis.",
-      });
-    }
-
-    if (!merchantId) {
-      return res.status(400).json({
-        status: "error",
-        message: "L'identifiant du marchand est requis.",
-      });
-    }
-
-    if (!phone) {
-      return res.status(400).json({
-        status: "error",
-        message: "Le numéro de portable est requis.",
-      });
-    }
-
-    if (!token) {
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token non fourni." });
-    }
-    // Vérifie si l'en-tête commence par "Bearer "
     if (!token.startsWith("Bearer ")) {
       return res.status(401).json({
         status: "error",
@@ -55,21 +28,13 @@ const renderMonais = async (req, res) => {
       });
     }
 
-    // Extrait le token en supprimant le préfixe "Bearer "
     const workerToken = token.substring(7);
     let decodedToken;
-
     try {
       decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
     } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res
-          .status(401)
-          .json({ status: "error", message: "TokenExpiredError" });
-      }
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token invalide." });
+      const errorMsg = error.name === "TokenExpiredError" ? "Token expiré." : "Token invalide.";
+      return res.status(401).json({ status: "error", message: errorMsg });
     }
 
     const workerId = decodedToken.id;
@@ -83,22 +48,18 @@ const renderMonais = async (req, res) => {
 
     const merchant = await Merchant.findByPk(merchantId);
     if (!merchant) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Le marchand n'existe pas." });
+      return res.status(404).json({ status: "error", message: "Le marchand n'existe pas." });
     }
 
     const cashRegister = await CashRegister.findByPk(cashRegisterId);
     if (!cashRegister) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "La caisse n'existe pas." });
+      return res.status(404).json({ status: "error", message: "La caisse n'existe pas." });
     }
 
     const cashRegisterBalance = await CashRegisterBalance.findOne({
       where: { cashregisterId: cashRegisterId },
-      lock: transaction.LOCK.UPDATE, // Assurer que la ligne est verrouillée pour mise à jour
-      transaction, // Inclure dans la transaction
+      lock: transaction.LOCK.UPDATE,
+      transaction,
     });
 
     if (!cashRegisterBalance) {
@@ -108,7 +69,6 @@ const renderMonais = async (req, res) => {
       });
     }
 
-    // Vérifier si la caisse a suffisamment de solde
     if (parseFloat(cashRegisterBalance.amount) < parseFloat(amount)) {
       return res.status(400).json({
         status: "error",
@@ -116,37 +76,13 @@ const renderMonais = async (req, res) => {
       });
     }
 
-    // Vérifier si le solde est en dessous du seuil minimum
     if (cashRegisterBalance.amount < cashRegister.minBalance) {
-      // Récupérer les informations de l'admin pour lui envoyer un e-mail
       const admin = await Admin.findOne();
       if (admin) {
-        const transporter = nodemailer.createTransport({
-          host: process.env.EMAIL_SMTP,
-          port: process.env.EMAIL_PORT,
-          secure: true,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-
-        // Contenu de l'e-mail
-        const mailOptions = {
-          from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
-          to: admin.email, // Adresse e-mail de l'admin
-          subject: "Alerte : Solde minimum atteint",
-          text: `Le solde de la caisse ${cashRegister.name} appartenant au marchand ${merchant.name} a atteint le seuil minimum. Solde actuel : ${cashRegisterBalance.amount} FCFA, Seuil minimum : ${cashRegister.minBalance} FCFA.`,
-        };
-
-        // Envoyer l'e-mail
-        transporter.sendMail(mailOptions, function (error, info) {
-          if (error) {
-            console.log("Erreur lors de l'envoi de l'email:", error);
-            addErrorLog(`Erreur lors de l'envoi de l'email: ${error}`);
-          } else {
-            console.log("Email envoyé avec succès:", info.response);
-          }
+        // Envoyer l'e-mail en tâche asynchrone pour ne pas bloquer le processus
+        sendLowBalanceAlert(admin.email, merchant.name, cashRegister.name, cashRegisterBalance.amount, cashRegister.minBalance).catch(error => {
+          console.error("Erreur lors de l'envoi de l'email:", error);
+          appendErrorLog(`Erreur lors de l'envoi de l'email: ${error}`);
         });
       }
     }
@@ -155,36 +91,34 @@ const renderMonais = async (req, res) => {
       where: { phone },
       attributes: ["id", "phone", "firstName", "lastName", "token", "isMobile"],
     });
+
     if (!customer) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Le client n'existe pas." });
+      return res.status(404).json({ status: "error", message: "Le client n'existe pas." });
     }
 
     const customerBalance = await CustomerBalance.findOne({
       where: { customerId: customer.id },
-      lock: transaction.LOCK.UPDATE, // Verrouiller pour mise à jour
-      transaction, // Inclure dans la transaction
+      lock: transaction.LOCK.UPDATE,
+      transaction,
     });
 
     if (!customerBalance) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Le solde du client n'existe pas." });
+      return res.status(404).json({
+        status: "error",
+        message: "Le solde du client n'existe pas.",
+      });
     }
 
-    // Débiter le solde de la caisse
+    // Mise à jour du solde de la caisse
     cashRegisterBalance.amount = parseFloat(cashRegisterBalance.amount) - parseFloat(amount);
     await cashRegisterBalance.save({ transaction });
 
-    // Crédite le solde du client
+    // Mise à jour du solde du client
     customerBalance.amount = parseFloat(customerBalance.amount) + parseFloat(amount);
     await customerBalance.save({ transaction });
 
-    // Générer un code de transaction
-    const transactionCode = generateTransactionCode("SC");
-
     // Enregistrer la transaction
+    const transactionCode = generateTransactionCode("SC");
     await Transaction.create(
       {
         customerId: customer.id,
@@ -202,44 +136,10 @@ const renderMonais = async (req, res) => {
     // Commit de la transaction (valider les changements)
     await transaction.commit();
 
-    // Envoyer une notification ou un SMS en fonction de la valeur de isMobile
-    if (customer.isMobile === true) {
-      // Envoi d'une notification via Firebase Cloud Messaging
-      if (customer.token) {
-        const message = {
-          token: customer.token,
-          notification: {
-            title: "Transaction réussie",
-            body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA.`,
-          },
-        };
-  
-        admin
-          .messaging()
-          .send(message)
-          .then((response) => {
-            console.log("Notification envoyée:", response);
-          })
-          .catch((error) => {
-            console.error("Erreur lors de l'envoi de la notification:", error);
-          });
-      }
-    } else {
-      // Envoi d'un SMS via Twilio
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const client = require("twilio")(accountSid, authToken);
-      client.messages
-        .create({
-          body: `Vous avez reçu ${amount} FCFA de ${merchant.name}. Votre solde est de ${customerBalance.amount} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte. 👉🏽 https://nyotapay.com/landingpage`,
-          from: "NYOTAPAY",
-          to: `+242${customer.phone}`,
-        })
-        .then((message) => console.log("SMS envoyé:", message.sid))
-        .catch((error) => {
-          console.error("Erreur lors de l'envoi du SMS:", error);
-        });
-    }
+    // Envoi des notifications (push ou SMS) en tâche asynchrone pour ne pas bloquer la réponse
+    sendCustomerNotificationOrSMS(customer, merchant.name, amount, customerBalance.amount, transactionCode).catch(error => {
+      console.error("Erreur lors de l'envoi de la notification/SMS:", error);
+    });
 
     return res.status(200).json({
       status: "success",
@@ -251,10 +151,58 @@ const renderMonais = async (req, res) => {
     appendErrorLog(`ERROR GIVEN MONEY TO CUSTOMER: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la transaction d'envoie.",
+      message: "Une erreur s'est produite lors de la transaction d'envoi.",
     });
   }
 };
+
+// Fonction pour envoyer une alerte de solde minimum
+async function sendLowBalanceAlert(adminEmail, merchantName, cashRegisterName, currentBalance, minBalance) {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_SMTP,
+    port: process.env.EMAIL_PORT,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
+    to: adminEmail,
+    subject: "Alerte : Solde minimum atteint",
+    text: `Le solde de la caisse ${cashRegisterName} du marchand ${merchantName} a atteint le seuil minimum. Solde actuel : ${currentBalance} FCFA, Seuil minimum : ${minBalance} FCFA.`,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+// Fonction pour envoyer une notification ou un SMS au client
+async function sendCustomerNotificationOrSMS(customer, merchantName, amount, newBalance, transactionCode) {
+  if (customer.isMobile && customer.token) {
+    // Envoi d'une notification via Firebase Cloud Messaging
+    const message = {
+      token: customer.token,
+      notification: {
+        title: "Transaction réussie",
+        body: `Vous avez reçu ${amount} FCFA de ${merchantName}. Votre solde est de ${newBalance} FCFA.`,
+      },
+    };
+
+    await admin.messaging().send(message);
+  } else {
+    // Envoi d'un SMS via Twilio
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const client = require("twilio")(accountSid, authToken);
+    await client.messages.create({
+      body: `Vous avez reçu ${amount} FCFA de ${merchantName}. Votre solde est de ${newBalance} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte. 👉🏽 https://nyotapay.com/landingpage`,
+      from: "NYOTAPAY",
+      to: `+242${customer.phone}`,
+    });
+  }
+}
 
 const receiveMonais = async (req, res) => {
   const transaction = await sequelize.transaction();
