@@ -14,11 +14,38 @@ const renderMonais = async (req, res) => {
     const token = req.headers.authorization;
     const { merchantId, cashRegisterId, phone, amount } = req.body;
 
-    if (!amount || !cashRegisterId || !merchantId || !phone || !token) {
+    if (!amount) {
       return res.status(400).json({
         status: "error",
-        message: "Les champs montant, identifiant de la caisse, identifiant du marchand, téléphone et token sont requis.",
+        message: "Le montant est requis.",
       });
+    }
+
+    if (!cashRegisterId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant de la caisse est requis.",
+      });
+    }
+
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le numéro de portable est requis.",
+      });
+    }
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token non fourni." });
     }
 
     if (!token.startsWith("Bearer ")) {
@@ -214,51 +241,42 @@ const receiveMonais = async (req, res) => {
       return res.status(401).json({ status: "error", message: "Token non fourni." });
     }
 
-    // Vérifie si l'en-tête commence par "Bearer "
     if (!token.startsWith("Bearer ")) {
       return res.status(401).json({ status: "error", message: "Format de token invalide." });
     }
 
-    // Extrait le token en supprimant le préfixe "Bearer "
     const workerToken = token.substring(7);
     let decodedToken;
-
     try {
       decodedToken = jwt.verify(workerToken, process.env.JWT_SECRET);
     } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res.status(401).json({ status: "error", message: "TokenExpiredError" });
-      }
-      return res.status(401).json({ status: "error", message: "Token invalide." });
+      return res.status(401).json({ status: "error", message: error.name === "TokenExpiredError" ? "Token expiré" : "Token invalide." });
     }
 
     if (!password) {
       return res.status(400).json({
         status: "error",
-        message: "Le client doit saisir sont mot de passe afin de pouvoir comfirmer la transaction.",
+        message: "Le client doit saisir son mot de passe afin de pouvoir confirmer la transaction.",
       });
     }
 
     const workerId = decodedToken.id;
-    const worker = await Worker.findByPk(workerId);
-    if (!worker) {
-      return res.status(400).json({ status: "error", message: "Ce compte utilisateur n'existe pas." });
-    }
 
-    const merchant = await Merchant.findByPk(merchantId);
-    if (!merchant) {
-      return res.status(404).json({ status: "error", message: "Le marchand n'existe pas." });
-    }
+    // Rechercher le worker, le marchand et la caisse en parallèle
+    const [worker, merchant, cashRegister] = await Promise.all([
+      Worker.findByPk(workerId),
+      Merchant.findByPk(merchantId),
+      CashRegister.findByPk(cashRegisterId)
+    ]);
 
-    const cashRegister = await CashRegister.findByPk(cashRegisterId);
-    if (!cashRegister) {
-      return res.status(404).json({ status: "error", message: "La caisse n'existe pas." });
-    }
+    if (!worker) return res.status(400).json({ status: "error", message: "Ce compte utilisateur n'existe pas." });
+    if (!merchant) return res.status(404).json({ status: "error", message: "Le marchand n'existe pas." });
+    if (!cashRegister) return res.status(404).json({ status: "error", message: "La caisse n'existe pas." });
 
     const cashRegisterBalance = await CashRegisterBalance.findOne({
       where: { cashregisterId: cashRegisterId },
-      lock: transaction.LOCK.UPDATE, // Verrouiller la ligne pour la mise à jour
-      transaction, // Inclure dans la transaction
+      lock: transaction.LOCK.UPDATE,
+      transaction
     });
 
     if (!cashRegisterBalance) {
@@ -267,51 +285,46 @@ const receiveMonais = async (req, res) => {
 
     const customer = await Customer.findOne({
       where: { phone },
-      attributes: ["id", "phone", "firstName", "lastName", "token", "isMobile", "password"],
+      attributes: ["id", "phone", "firstName", "lastName", "token", "isMobile", "password"]
     });
 
-    if (!customer) {
-      return res.status(404).json({ status: "error", message: "Le client n'existe pas." });
-    }
+    if (!customer) return res.status(404).json({ status: "error", message: "Le client n'existe pas." });
 
-    if (!bcrypt.compareSync(password, customer.password)) {
+    // Vérification du mot de passe du client
+    const isPasswordValid = await bcrypt.compare(password, customer.password);
+    if (!isPasswordValid) {
       return res.status(400).json({ status: "error", message: "Mot de passe invalide ou ne correspond pas." });
     }
 
     const customerBalance = await CustomerBalance.findOne({
       where: { customerId: customer.id },
-      lock: transaction.LOCK.UPDATE, // Verrouiller pour mise à jour
-      transaction, // Inclure dans la transaction
+      lock: transaction.LOCK.UPDATE,
+      transaction
     });
 
     if (!customerBalance) {
       return res.status(404).json({ status: "error", message: "Le solde du client n'existe pas." });
     }
 
-    // Vérifier si le client a suffisamment de solde
     if (parseFloat(customerBalance.amount) < parseFloat(amount)) {
       return res.status(400).json({ status: "error", message: "Solde insuffisant pour le client." });
     }
 
-    // Calculer la commission de 3,5% et l'arrondir à deux chiffres après la virgule
     const commissionRate = 0.035;
     const commission = (parseFloat(amount) * commissionRate).toFixed(2);
-
-    // Montant final à transférer dans la caisse après déduction de la commission et arrondi
     const amountAfterCommission = (parseFloat(amount) - commission).toFixed(2);
 
-    // Débiter le solde du client
+    // Débiter le solde du client et créditer la caisse
     customerBalance.amount = (parseFloat(customerBalance.amount) - parseFloat(amount)).toFixed(2);
-    await customerBalance.save({ transaction });
-
-    // Crédite le solde de la caisse avec le montant après commission
     cashRegisterBalance.amount = (parseFloat(cashRegisterBalance.amount) + parseFloat(amountAfterCommission)).toFixed(2);
-    await cashRegisterBalance.save({ transaction });
 
-    // Générer un code de transaction
-    const transactionCode = generateTransactionCode("RC"); // RC pour "Receive Cash"
+    await Promise.all([
+      customerBalance.save({ transaction }),
+      cashRegisterBalance.save({ transaction })
+    ]);
 
-    // Enregistrer la transaction
+    const transactionCode = generateTransactionCode("RC");
+
     await Transaction.create(
       {
         customerId: customer.id,
@@ -321,14 +334,12 @@ const receiveMonais = async (req, res) => {
         type: "COLLECT",
         code: transactionCode,
         amount: amountAfterCommission,
-        commission: commission,
+        commission: commission
       },
       { transaction }
     );
 
-    // Vérifier si le solde est en dessous du seuil minimum
     if (cashRegisterBalance.amount < cashRegister.minBalance) {
-      // Récupérer les informations de l'admin pour lui envoyer un e-mail
       const admin = await Admin.findOne();
       if (admin) {
         const transporter = nodemailer.createTransport({
@@ -337,84 +348,62 @@ const receiveMonais = async (req, res) => {
           secure: true,
           auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
+            pass: process.env.EMAIL_PASS
+          }
         });
 
-        // Contenu de l'e-mail
         const mailOptions = {
           from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
-          to: admin.email, // Adresse e-mail de l'admin
+          to: admin.email,
           subject: "Alerte : Solde minimum atteint",
-          text: `Le solde de la caisse ${cashRegister.name} appartenant au marchand ${merchant.name} a atteint le seuil minimum. Solde actuel : ${cashRegisterBalance.amount} FCFA, Seuil minimum : ${cashRegister.minBalance} FCFA.`,
+          text: `Le solde de la caisse ${cashRegister.name} appartenant au marchand ${merchant.name} a atteint le seuil minimum. Solde actuel : ${cashRegisterBalance.amount} FCFA, Seuil minimum : ${cashRegister.minBalance} FCFA.`
         };
 
-        // Envoyer l'e-mail
-        transporter.sendMail(mailOptions, function (error, info) {
-          if (error) {
-            console.log("Erreur lors de l'envoi de l'email:", error);
-            addErrorLog(`Erreur lors de l'envoi de l'email: ${error}`);
-          } else {
-            console.log("Email envoyé avec succès:", info.response);
-          }
+        transporter.sendMail(mailOptions).catch(error => {
+          console.error("Erreur lors de l'envoi de l'email:", error);
         });
       }
     }
 
-    // Commit de la transaction (valider les changements)
     await transaction.commit();
 
-    // Envoyer une notification ou un SMS en fonction de la valeur de isMobile
-    if (customer.isMobile === true) {
-      // Envoi d'une notification via Firebase Cloud Messaging
-      // Envoie de la notification uniquement si le client a un token
-      if (customer.token) {
-        const message = {
-          token: customer.token,
-          notification: {
-            title: "Transaction réussie",
-            body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Votre solde restant est de ${customerBalance.amount} FCFA.`,
-          },
-        };
-  
-        admin
-          .messaging()
-          .send(message)
-          .then((response) => {
-            console.log("Notification envoyée:", response);
-          })
-          .catch((error) => {
-            console.error("Erreur lors de l'envoi de la notification:", error);
-          });
-      }
+    if (customer.isMobile === true && customer.token) {
+      const message = {
+        token: customer.token,
+        notification: {
+          title: "Transaction réussie",
+          body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Votre solde restant est de ${customerBalance.amount} FCFA.`
+        }
+      };
+
+      admin.messaging().send(message).catch(error => {
+        console.error("Erreur lors de l'envoi de la notification:", error);
+      });
     } else {
-      // Envoi d'un SMS via Twilio
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
       const client = require("twilio")(accountSid, authToken);
+
       client.messages
         .create({
           body: `Vous avez envoyé ${amount} FCFA à ${merchant.name}. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte. 👉🏽 https://nyotapay.com/landingpage`,
           from: "NYOTAPAY",
-          to: `+242${customer.phone}`,
+          to: `+242${customer.phone}`
         })
-        .then((message) => console.log("SMS envoyé:", message.sid))
-        .catch((error) => {
-          console.error("Erreur lors de l'envoi du SMS:", error);
-        });
+        .then(message => console.log("SMS envoyé:", message.sid))
+        .catch(error => console.error("Erreur lors de l'envoi du SMS:", error));
     }
 
     return res.status(200).json({
       status: "success",
-      message: "Transaction effectuée avec succès.",
+      message: "Transaction effectuée avec succès."
     });
   } catch (error) {
     await transaction.rollback();
     console.error(`ERROR TRANSFERRING MONEY TO CASHREGISTER: ${error}`);
-    appendErrorLog(`ERROR TRANSFERRING MONEY TO CASHREGISTER: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la transaction.",
+      message: "Une erreur s'est produite lors de la transaction."
     });
   }
 };
