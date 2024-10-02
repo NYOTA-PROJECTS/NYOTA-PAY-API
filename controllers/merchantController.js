@@ -570,4 +570,50 @@ const merchantDetails = async (req, res) => {
   }
 }
 
-module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge, balanceAllMerchants, allMerchant, merchantDetails };
+const allAdminMarchants = async (req, res) => {
+  try {
+    const merchantId = req.headers.merchantid;
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    // Récupérer les administrateurs du marchand spécifique
+    const merchantAdmins = await MerchantAdmin.findAll({
+      where: { merchantId: merchantId }, // Filtrer par l'ID du marchand
+      attributes: ['firstName', 'lastName', 'email', 'phone'], // Sélectionner les attributs nécessaires
+    });
+
+    // Si aucun administrateur n'est trouvé
+    if (!merchantAdmins || merchantAdmins.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucun administrateur trouvé pour ce marchand.",
+      });
+    }
+
+    // Préparer la réponse JSON
+    const adminDetails = merchantAdmins.map(admin => ({
+      name: `${admin.firstName} ${admin.lastName}`,
+      email: admin.email,
+      phone: admin.phone,
+    }));
+
+    return res.status(200).json({
+      status: 'success',
+      data: adminDetails,
+    });
+    
+  } catch (error) {
+    console.error(`ERROR ALL ADMIN MERCHANTS: ${error}`);
+    appendErrorLog(`ERROR ALL ADMIN MERCHANTS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recherche de tous les marchands.",
+    });
+  }
+}
+
+module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge, balanceAllMerchants, allMerchant, merchantDetails, allAdminMarchants };
