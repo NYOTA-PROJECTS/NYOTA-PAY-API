@@ -448,7 +448,7 @@ const allMerchant = async (req, res) => {
   try {
     const merchants = await Merchant.findAll({
       include: [
-        { model: MerchantAdmin }, // Inclusion des administrateurs
+        { model: MerchantAdmin },
         {
           model: PointOfSale,
           include: [{ model: CashRegister, include: [CashRegisterBalance] }],
@@ -485,6 +485,7 @@ const allMerchant = async (req, res) => {
       }
 
       return {
+        id: merchant.id,
         marchand: merchant.name,
         administrateur: adminCount,
         pointDeVente: pointOfSaleCount,
@@ -568,6 +569,7 @@ const merchantDetails = async (req, res) => {
 
     // Préparer la réponse JSON avec les détails demandés
     const merchantData = {
+      id: merchant.id,
       balance: totalCash,
       admin: adminCount,
       pos: pointOfSaleCount,
@@ -616,6 +618,7 @@ const allAdminMarchants = async (req, res) => {
 
     // Préparer la réponse JSON
     const adminDetails = merchantAdmins.map((admin) => ({
+      id: admin.id,
       name: `${admin.firstName} ${admin.lastName}`,
       email: admin.email,
       phone: admin.phone,
