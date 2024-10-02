@@ -62,12 +62,12 @@ const create = async (req, res) => {
     let coverUrl = null;
 
     if (req.files) {
-      if (req.files['photo']) {
-        const photoFile = req.files['photo'][0];
+      if (req.files["photo"]) {
+        const photoFile = req.files["photo"][0];
         photoUrl = `${req.protocol}://${host}/merchants/${photoFile.filename}`;
       }
-      if (req.files['cover']) {
-        const coverFile = req.files['cover'][0];
+      if (req.files["cover"]) {
+        const coverFile = req.files["cover"][0];
         coverUrl = `${req.protocol}://${host}/merchants/${coverFile.filename}`;
       }
     }
@@ -78,7 +78,7 @@ const create = async (req, res) => {
         name,
         categoryId,
         photo: photoUrl,
-        cover: coverUrl
+        cover: coverUrl,
       },
       { transaction }
     );
@@ -225,7 +225,8 @@ const updateCover = async (req, res) => {
     await Merchant.update({ cover: coverUrl }, { where: { id: merchantId } });
     return res.status(200).json({
       status: "success",
-      message: "La photo de couverture du marchand a été mise à jour avec succès!.",
+      message:
+        "La photo de couverture du marchand a été mise à jour avec succès!.",
     });
   } catch (error) {
     console.error(`ERROR UPDATING COVER MERCHANT: ${error}`);
@@ -241,7 +242,7 @@ const updateCover = async (req, res) => {
 const getAllInfos = async (req, res) => {
   try {
     const merchants = await Merchant.findAll({
-      attributes: ["id", "name",],
+      attributes: ["id", "name"],
       include: [
         {
           model: PointOfSale,
@@ -368,7 +369,8 @@ const createAdmin = async (req, res) => {
     appendErrorLog(`ERROR CREATING MERCHANT ADMIN: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la création du compte admin du marchand.",
+      message:
+        "Une erreur s'est produite lors de la création du compte admin du marchand.",
     });
   }
 };
@@ -418,14 +420,15 @@ const recharge = async (req, res) => {
     appendErrorLog(`ERROR RECHARGING MERCHANT: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recharge du compte du marchand.",
+      message:
+        "Une erreur s'est produite lors de la recharge du compte du marchand.",
     });
   }
-}
+};
 
 const balanceAllMerchants = async (req, res) => {
   try {
-    const totalBalance = await MerchantBalance.sum('amount');
+    const totalBalance = await MerchantBalance.sum("amount");
     return res.status(200).json({
       status: "success",
       data: totalBalance || 0,
@@ -435,36 +438,44 @@ const balanceAllMerchants = async (req, res) => {
     appendErrorLog(`ERROR BALANCE ALL MERCHANTS: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recherche du solde de tous les marchands.",
+      message:
+        "Une erreur s'est produite lors de la recherche du solde de tous les marchands.",
     });
   }
-}
+};
 
 const allMerchant = async (req, res) => {
   try {
     const merchants = await Merchant.findAll({
       include: [
         { model: MerchantAdmin }, // Inclusion des administrateurs
-        { model: PointOfSale, include: [{ model: CashRegister, include: [CashRegisterBalance] }] }, // Inclusion des points de vente et des caisses avec leurs balances
+        {
+          model: PointOfSale,
+          include: [{ model: CashRegister, include: [CashRegisterBalance] }],
+        }, // Inclusion des points de vente et des caisses avec leurs balances
       ],
     });
 
     // Préparer la réponse JSON
-    const merchantDetails = merchants.map(merchant => {
+    const merchantDetails = merchants.map((merchant) => {
       // Calcul du nombre d'administrateurs et de points de vente
-      const adminCount = merchant.MerchantAdmins ? merchant.MerchantAdmins.length : 0;
-      const pointOfSaleCount = merchant.PointOfSales ? merchant.PointOfSales.length : 0;
+      const adminCount = merchant.MerchantAdmins
+        ? merchant.MerchantAdmins.length
+        : 0;
+      const pointOfSaleCount = merchant.PointOfSales
+        ? merchant.PointOfSales.length
+        : 0;
 
       // Calcul du nombre total de caisses et du solde total des caisses pour chaque marchand
       let cashRegisterCount = 0;
       let totalCash = 0;
 
       if (merchant.PointOfSales) {
-        merchant.PointOfSales.forEach(pointOfSale => {
+        merchant.PointOfSales.forEach((pointOfSale) => {
           if (pointOfSale.CashRegisters) {
             cashRegisterCount += pointOfSale.CashRegisters.length;
 
-            pointOfSale.CashRegisters.forEach(cashRegister => {
+            pointOfSale.CashRegisters.forEach((cashRegister) => {
               if (cashRegister.CashRegisterBalance) {
                 totalCash += cashRegister.CashRegisterBalance.amount;
               }
@@ -483,7 +494,7 @@ const allMerchant = async (req, res) => {
     });
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: merchantDetails,
     });
   } catch (error) {
@@ -491,7 +502,8 @@ const allMerchant = async (req, res) => {
     appendErrorLog(`ERROR ALL MERCHANTS: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recherche de tous les marchands.",
+      message:
+        "Une erreur s'est produite lors de la recherche de tous les marchands.",
     });
   }
 };
@@ -511,7 +523,10 @@ const merchantDetails = async (req, res) => {
       where: { id: merchantId },
       include: [
         { model: MerchantAdmin }, // Inclusion des administrateurs
-        { model: PointOfSale, include: [{ model: CashRegister, include: [CashRegisterBalance] }] }, // Points de vente + Caisse + Balance
+        {
+          model: PointOfSale,
+          include: [{ model: CashRegister, include: [CashRegisterBalance] }],
+        }, // Points de vente + Caisse + Balance
         { model: Worker }, // Inclusion des travailleurs
       ],
     });
@@ -525,18 +540,22 @@ const merchantDetails = async (req, res) => {
     }
 
     // Calcul des détails
-    const adminCount = merchant.MerchantAdmins ? merchant.MerchantAdmins.length : 0;
-    const pointOfSaleCount = merchant.PointOfSales ? merchant.PointOfSales.length : 0;
+    const adminCount = merchant.MerchantAdmins
+      ? merchant.MerchantAdmins.length
+      : 0;
+    const pointOfSaleCount = merchant.PointOfSales
+      ? merchant.PointOfSales.length
+      : 0;
 
     let cashRegisterCount = 0;
     let totalCash = 0;
 
     // Itérer à travers les points de vente pour compter les caisses et totaliser le solde
     if (merchant.PointOfSales) {
-      merchant.PointOfSales.forEach(pointOfSale => {
+      merchant.PointOfSales.forEach((pointOfSale) => {
         if (pointOfSale.CashRegisters) {
           cashRegisterCount += pointOfSale.CashRegisters.length;
-          pointOfSale.CashRegisters.forEach(cashRegister => {
+          pointOfSale.CashRegisters.forEach((cashRegister) => {
             if (cashRegister.CashRegisterBalance) {
               totalCash += cashRegister.CashRegisterBalance.amount;
             }
@@ -557,7 +576,7 @@ const merchantDetails = async (req, res) => {
     };
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: merchantData,
     });
   } catch (error) {
@@ -565,10 +584,11 @@ const merchantDetails = async (req, res) => {
     appendErrorLog(`ERROR MERCHANT DETAILS: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recherche des données du marchand.",
+      message:
+        "Une erreur s'est produite lors de la recherche des données du marchand.",
     });
   }
-}
+};
 
 const allAdminMarchants = async (req, res) => {
   try {
@@ -583,7 +603,7 @@ const allAdminMarchants = async (req, res) => {
     // Récupérer les administrateurs du marchand spécifique
     const merchantAdmins = await MerchantAdmin.findAll({
       where: { merchantId: merchantId }, // Filtrer par l'ID du marchand
-      attributes: ['firstName', 'lastName', 'email', 'phone'], // Sélectionner les attributs nécessaires
+      attributes: ["firstName", "lastName", "email", "phone"], // Sélectionner les attributs nécessaires
     });
 
     // Si aucun administrateur n'est trouvé
@@ -595,25 +615,74 @@ const allAdminMarchants = async (req, res) => {
     }
 
     // Préparer la réponse JSON
-    const adminDetails = merchantAdmins.map(admin => ({
+    const adminDetails = merchantAdmins.map((admin) => ({
       name: `${admin.firstName} ${admin.lastName}`,
       email: admin.email,
       phone: admin.phone,
     }));
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: adminDetails,
     });
-    
   } catch (error) {
     console.error(`ERROR ALL ADMIN MERCHANTS: ${error}`);
     appendErrorLog(`ERROR ALL ADMIN MERCHANTS: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recherche de tous les marchands.",
+      message:
+        "Une erreur s'est produite lors de la recherche de tous les marchands.",
     });
   }
-}
+};
 
-module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge, balanceAllMerchants, allMerchant, merchantDetails, allAdminMarchants };
+const destroyMerchantAdmin = async (req, res) => {
+  try {
+    const { merchantAdminId } = req.body;
+    if (!merchantAdminId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant de l'administrateur est requis.",
+      });
+    }
+
+    const merchantAdmin = await MerchantAdmin.findOne({
+      where: { id: merchantAdminId },
+    });
+    if (!merchantAdmin) {
+      return res.status(404).json({
+        status: "error",
+        message: "L'administrateur n'existe pas.",
+      });
+    }
+
+    await MerchantAdmin.destroy({ where: { id: merchantAdminId } });
+
+    return res.status(200).json({
+      status: "success",
+      message: "L'administrateur a été supprimé.",
+    });
+  } catch (error) {
+    console.error(`ERROR DESTROY MERCHANT ADMIN: ${error}`);
+    appendErrorLog(`ERROR DESTROY MERCHANT ADMIN: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la suppression de l'administrateur.",
+    });
+  }
+};
+
+module.exports = {
+  create,
+  updatePhoto,
+  updateCover,
+  getAllInfos,
+  createAdmin,
+  recharge,
+  balanceAllMerchants,
+  allMerchant,
+  merchantDetails,
+  allAdminMarchants,
+  destroyMerchantAdmin,
+};

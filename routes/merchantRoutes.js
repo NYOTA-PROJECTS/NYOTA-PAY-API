@@ -34,4 +34,7 @@ router.get("/all-merchant-admins", verifyToken, isAdmin, merchantController.allA
 // DETAILS DU MARCHANT
 router.get("/merchant-details", verifyToken, isAdmin, merchantController.merchantDetails);
 
+// DESTROY
+router.delete("/destroy-merchant-admin", verifyToken, isAdmin, merchantController.destroyMerchantAdmin);
+
 module.exports = router
