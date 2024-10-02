@@ -6,6 +6,8 @@ const {
   MerchantBalance,
   Category,
   Worker,
+  CashRegister,
+  CashRegisterBalance,
 } = require("../models");
 const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -421,4 +423,77 @@ const recharge = async (req, res) => {
   }
 }
 
-module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge };
+const balanceAllMerchants = async (req, res) => {
+  try {
+    const totalBalance = await MerchantBalance.sum('amount');
+    return res.status(200).json({
+      status: "success",
+      data: totalBalance || 0,
+    });
+  } catch (error) {
+    console.error(`ERROR BALANCE ALL MERCHANTS: ${error}`);
+    appendErrorLog(`ERROR BALANCE ALL MERCHANTS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recherche du solde de tous les marchands.",
+    });
+  }
+}
+
+const allMerchant = async (req, res) => {
+  try {
+    const merchants = await Merchant.findAll({
+      include: [
+        { model: MerchantAdmin }, // Inclusion des administrateurs
+        { model: PointOfSale, include: [{ model: CashRegister, include: [CashRegisterBalance] }] }, // Inclusion des points de vente et des caisses avec leurs balances
+      ],
+    });
+
+    // Préparer la réponse JSON
+    const merchantDetails = merchants.map(merchant => {
+      // Calcul du nombre d'administrateurs et de points de vente
+      const adminCount = merchant.MerchantAdmins ? merchant.MerchantAdmins.length : 0;
+      const pointOfSaleCount = merchant.PointOfSales ? merchant.PointOfSales.length : 0;
+
+      // Calcul du nombre total de caisses et du solde total des caisses pour chaque marchand
+      let cashRegisterCount = 0;
+      let totalCash = 0;
+
+      if (merchant.PointOfSales) {
+        merchant.PointOfSales.forEach(pointOfSale => {
+          if (pointOfSale.CashRegisters) {
+            cashRegisterCount += pointOfSale.CashRegisters.length;
+
+            pointOfSale.CashRegisters.forEach(cashRegister => {
+              if (cashRegister.CashRegisterBalance) {
+                totalCash += cashRegister.CashRegisterBalance.amount;
+              }
+            });
+          }
+        });
+      }
+
+      return {
+        marchand: merchant.name,
+        administrateur: adminCount,
+        pointDeVente: pointOfSaleCount,
+        caisse: cashRegisterCount,
+        balance: totalCash,
+      };
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      data: merchantDetails,
+    });
+  } catch (error) {
+    console.error(`ERROR ALL MERCHANTS: ${error}`);
+    appendErrorLog(`ERROR ALL MERCHANTS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recherche de tous les marchands.",
+    });
+  }
+};
+
+module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge, balanceAllMerchants, allMerchant };

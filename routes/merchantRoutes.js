@@ -22,4 +22,10 @@ router.post("/create-admin", verifyToken, isAdmin, merchantController.createAdmi
 // RECHARGER LE SOLDE DU MARCHANT
 router.put("/recharge", verifyToken, isAdminOrMerchant, merchantController.recharge);
 
+// SOMME DE LA SOLDE DES MARCHANTS
+router.get("/all-balance", verifyToken, isAdminOrMerchant, merchantController.balanceAllMerchants);
+
+// LISTE DE TOUS LES MARCHANTS
+router.get("/all-merchants", verifyToken, isAdmin, merchantController.allMerchant);
+
 module.exports = router
