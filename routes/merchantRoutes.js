@@ -28,4 +28,7 @@ router.get("/all-balance", verifyToken, isAdminOrMerchant, merchantController.ba
 // LISTE DE TOUS LES MARCHANTS
 router.get("/all-merchants", verifyToken, isAdmin, merchantController.allMerchant);
 
+// DETAILS DU MARCHANT
+router.get("/merchant-details", verifyToken, isAdminOrMerchant, merchantController.merchantDetails);
+
 module.exports = router

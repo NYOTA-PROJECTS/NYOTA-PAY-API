@@ -496,4 +496,78 @@ const allMerchant = async (req, res) => {
   }
 };
 
-module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge, balanceAllMerchants, allMerchant };
+const merchantDetails = async (req, res) => {
+  try {
+    const merchantId = req.headers.merchantid;
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    // Récupérer les informations détaillées du marchand
+    const merchant = await Merchant.findOne({
+      where: { id: merchantId },
+      include: [
+        { model: MerchantAdmin }, // Inclusion des administrateurs
+        { model: PointOfSale, include: [{ model: CashRegister, include: [CashRegisterBalance] }] }, // Points de vente + Caisse + Balance
+        { model: Worker }, // Inclusion des travailleurs
+      ],
+    });
+
+    // Si aucun marchand trouvé
+    if (!merchant) {
+      return res.status(404).json({
+        status: "error",
+        message: "Le marchand n'a pas été trouvé.",
+      });
+    }
+
+    // Calcul des détails
+    const adminCount = merchant.MerchantAdmins ? merchant.MerchantAdmins.length : 0;
+    const pointOfSaleCount = merchant.PointOfSales ? merchant.PointOfSales.length : 0;
+
+    let cashRegisterCount = 0;
+    let totalCash = 0;
+
+    // Itérer à travers les points de vente pour compter les caisses et totaliser le solde
+    if (merchant.PointOfSales) {
+      merchant.PointOfSales.forEach(pointOfSale => {
+        if (pointOfSale.CashRegisters) {
+          cashRegisterCount += pointOfSale.CashRegisters.length;
+          pointOfSale.CashRegisters.forEach(cashRegister => {
+            if (cashRegister.CashRegisterBalance) {
+              totalCash += cashRegister.CashRegisterBalance.amount;
+            }
+          });
+        }
+      });
+    }
+
+    const workerCount = merchant.Workers ? merchant.Workers.length : 0;
+
+    // Préparer la réponse JSON avec les détails demandés
+    const merchantData = {
+      balance: totalCash,
+      admin: adminCount,
+      pos: pointOfSaleCount,
+      cashier: cashRegisterCount,
+      user: workerCount,
+    };
+
+    return res.status(200).json({
+      status: 'success',
+      data: merchantData,
+    });
+  } catch (error) {
+    console.error(`ERROR MERCHANT DETAILS: ${error}`);
+    appendErrorLog(`ERROR MERCHANT DETAILS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recherche des données du marchand.",
+    });
+  }
+}
+
+module.exports = { create, updatePhoto, updateCover, getAllInfos, createAdmin, recharge, balanceAllMerchants, allMerchant, merchantDetails };
