@@ -673,6 +673,116 @@ const destroyMerchantAdmin = async (req, res) => {
   }
 };
 
+const merchantCashier = async (req, res) => {
+  try {
+    const merchantId = req.headers.merchantid;
+
+    // Vérification si l'ID du marchand est fourni
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    // Récupérer les caisses enregistreuses (CashRegister) avec leurs soldes (CashRegisterBalance) et le lien du point de vente (PointOfSale)
+    const cashRegisters = await CashRegister.findAll({
+      where: { merchantId },
+      attributes: ['name', 'minBalance'],
+      include: [
+        {
+          model: CashRegisterBalance,
+          attributes: ['amount'],
+        },
+        {
+          model: PointOfSale,
+          attributes: ['urlLink'],
+        }
+      ]
+    });
+
+    // Si aucune caisse enregistreuse n'est trouvée
+    if (!cashRegisters || cashRegisters.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucune caisse enregistreuse trouvée pour ce marchand.",
+      });
+    }
+
+    // Préparer la réponse JSON avec les informations récupérées
+    const cashierDetails = cashRegisters.map(cashRegister => ({
+      name: cashRegister.name,
+      minAmount: cashRegister.minBalance,
+      amount: cashRegister.CashRegisterBalance?.amount || 0,
+      pos: cashRegister.PointOfSale?.urlLink || 'N/A', 
+    }));
+
+    return res.status(200).json({
+      status: 'success',
+      data: cashierDetails,
+    });
+
+  } catch (error) {
+    console.error(`ERROR MERCHANT CASHIER: ${error}`);
+    appendErrorLog(`ERROR MERCHANT CASHIER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recherche des informations du marchand.",
+    });
+  }
+}
+
+const allCashregister = async (req, res) => {
+  try {
+    const merchantId = req.headers.merchantid;
+    
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    const merchant = await Merchant.findOne({ where: { id: merchantId } });
+    if (!merchant) {
+      return res.status(404).json({
+        status: "error",
+        message: "Le compte du marchand n'existe pas.",
+      });
+    }
+    
+    const cashregisters = await CashRegister.findAll({
+      where: { merchantId },
+      attributes: ['id', 'name'],
+    });
+    
+    if (!cashregisters || cashregisters.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucune caisse enregistreuse trouvée pour ce marchand.",
+      });
+    }
+    
+    const cashregisterDetails = cashregisters.map(cashregister => ({
+      id: cashregister.id,
+      name: cashregister.name,
+    }));
+    
+    return res.status(200).json({
+      status: 'success',
+      data: cashregisterDetails,
+    });
+    
+  } catch (error) {
+    console.error(`ERROR ALL CASHREGISTER: ${error}`);
+    appendErrorLog(`ERROR ALL CASHREGISTER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recherche de tous les caisses enregistreuses.",
+    });
+  }
+}
+
 module.exports = {
   create,
   updatePhoto,
@@ -685,4 +795,6 @@ module.exports = {
   merchantDetails,
   allAdminMarchants,
   destroyMerchantAdmin,
+  merchantCashier,
+  allCashregister,
 };

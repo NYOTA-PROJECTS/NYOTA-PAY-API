@@ -31,6 +31,12 @@ router.get("/all-merchants", verifyToken, isAdmin, merchantController.allMerchan
 // LISTE DE TOUS LES ADMINS DU MARCHANTS
 router.get("/all-merchant-admins", verifyToken, isAdmin, merchantController.allAdminMarchants);
 
+// LISTE DE TOUTES LES CAISSES DU MARCHANTS
+router.get("/all-merchant-cashiers", verifyToken, isAdmin, merchantController.merchantCashier);
+
+// LISTE DES CAISSES DU MARCHANT
+router.get("/merchant-cashier", verifyToken, isAdmin, merchantController.allCashregister);
+
 // DETAILS DU MARCHANT
 router.get("/merchant-details", verifyToken, isAdmin, merchantController.merchantDetails);
 
