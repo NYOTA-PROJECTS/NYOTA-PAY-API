@@ -711,6 +711,7 @@ const merchantCashier = async (req, res) => {
 
     // Préparer la réponse JSON avec les informations récupérées
     const cashierDetails = cashRegisters.map(cashRegister => ({
+      id: cashRegister.id,
       name: cashRegister.name,
       minAmount: cashRegister.minBalance,
       amount: cashRegister.CashRegisterBalance?.amount || 0,
