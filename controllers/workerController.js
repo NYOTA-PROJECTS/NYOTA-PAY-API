@@ -220,38 +220,14 @@ const updatePassword = async (req, res) => {
 
 const getAll = async (req, res) => {
   try {
-    const token = req.headers.authorization;
-    if (!token) {
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token non fourni." });
-    }
-    // Vérifie si l'en-tête commence par "Bearer "
-    if (!token.startsWith("Bearer ")) {
-      return res.status(401).json({
+    const merchantId = req.headers.merchantid;
+    if (!merchantId) {
+      return res.status(400).json({
         status: "error",
-        message: "Format de token invalide.",
+        message: "L'identifiant du marchand est requis.",
       });
     }
 
-    // Extrait le token en supprimant le préfixe "Bearer "
-    const customToken = token.substring(7);
-    let decodedToken;
-
-    try {
-      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
-    } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res
-          .status(401)
-          .json({ status: "error", message: "TokenExpiredError" });
-      }
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token invalide." });
-    }
-
-    const merchantId = decodedToken.id;
     const merchant = await Merchant.findByPk(merchantId);
     if (!merchant) {
       return res.status(404).json({
@@ -261,7 +237,7 @@ const getAll = async (req, res) => {
     }
 
     const workers = await Worker.findAll({
-      where: { merchantId: merchantId, isActive: true },
+      where: { merchantId: merchantId },
       attributes: ["id", "name", "phone", "isActive"],
       order: [["name", "ASC"]],
     });
