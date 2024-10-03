@@ -65,7 +65,14 @@ const renderMonais = async (req, res) => {
     }
 
     const workerId = decodedToken.id;
-    const worker = await Worker.findByPk(workerId);
+   
+    // Parallélisation des requêtes pour améliorer les performances
+    const [worker, merchant, cashRegister] = await Promise.all([
+      Worker.findByPk(workerId),
+      Merchant.findByPk(merchantId),
+      CashRegister.findByPk(cashRegisterId),
+    ]);
+
     if (!worker) {
       return res.status(400).json({
         status: "error",
@@ -73,12 +80,10 @@ const renderMonais = async (req, res) => {
       });
     }
 
-    const merchant = await Merchant.findByPk(merchantId);
     if (!merchant) {
       return res.status(404).json({ status: "error", message: "Le marchand n'existe pas." });
     }
 
-    const cashRegister = await CashRegister.findByPk(cashRegisterId);
     if (!cashRegister) {
       return res.status(404).json({ status: "error", message: "La caisse n'existe pas." });
     }
@@ -160,11 +165,12 @@ const renderMonais = async (req, res) => {
       { transaction }
     );
 
-    // Commit de la transaction (valider les changements)
+    // Commit de la transaction
     await transaction.commit();
 
     // Envoi des notifications (push ou SMS) en tâche asynchrone pour ne pas bloquer la réponse
-    sendCustomerNotificationOrSMS(customer, merchant.name, amount, customerBalance.amount, transactionCode).catch(error => {
+    sendCustomerNotificationOrSMS(customer, merchant.name, amount, customerBalance.amount, transactionCode)
+    .catch(error => {
       console.error("Erreur lors de l'envoi de la notification/SMS:", error);
     });
 
@@ -183,7 +189,7 @@ const renderMonais = async (req, res) => {
   }
 };
 
-// Fonction pour envoyer une alerte de solde minimum
+// Fonction pour envoyer une alerte de solde minimum à plusieurs administrateurs
 async function sendLowBalanceAlert(adminEmail, merchantName, cashRegisterName, currentBalance, minBalance) {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_SMTP,
@@ -196,7 +202,7 @@ async function sendLowBalanceAlert(adminEmail, merchantName, cashRegisterName, c
   });
 
   const mailOptions = {
-    from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
+    from: `NYOTA PAY <${process.env.EMAIL_USER}>`,
     to: adminEmail,
     subject: "Alerte : Solde minimum atteint",
     text: `Le solde de la caisse ${cashRegisterName} du marchand ${merchantName} a atteint le seuil minimum. Solde actuel : ${currentBalance} FCFA, Seuil minimum : ${minBalance} FCFA.`,
