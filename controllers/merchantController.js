@@ -787,6 +787,87 @@ const allCashregister = async (req, res) => {
   }
 }
 
+const merchantWorkers = async (req, res) => {
+  try {
+    const merchantId = req.headers.merchantid;
+
+    // Vérifier si l'ID du marchand est fourni
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    // Vérifier l'existence du marchand
+    const merchant = await Merchant.findOne({ where: { id: merchantId } });
+    if (!merchant) {
+      return res.status(404).json({
+        status: "error",
+        message: "Le compte du marchand n'existe pas.",
+      });
+    }
+
+    // Récupérer les employés (Workers) du marchand
+    const workers = await Worker.findAll({
+      where: { merchantId },
+      attributes: ['name', 'phone', 'createdAt'] // Sélectionner les informations des employés
+    });
+
+    // Récupérer toutes les caisses enregistreuses du marchand avec leur solde actuel
+    const cashRegisters = await CashRegister.findAll({
+      where: { merchantId },
+      include: [{
+        model: CashRegisterBalance,
+        attributes: ['amount'] // Récupérer le solde de chaque caisse
+      }]
+    });
+
+    // Si aucun employé n'est trouvé
+    if (!workers || workers.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Aucun employé trouvé pour ce marchand.",
+      });
+    }
+
+    // Calcul du solde total de toutes les caisses enregistreuses
+    let totalBalance = 0;
+
+    // Construire un objet associant les caisses aux employés
+    const workerDetails = workers.map((worker, index) => {
+      const cashRegister = cashRegisters[index]; // Associer un CashRegister à un employé (selon l'index)
+      const currentBalance = cashRegister?.CashRegisterBalance?.amount || 0; // Si aucune balance, 0 par défaut
+      totalBalance += currentBalance; // Ajouter chaque solde au total
+
+      return {
+        id: worker.id,
+        firstName: worker.firstName,
+        lastName: worker.lastName,
+        phone: worker.phone,
+        createdAt: worker.createdAt,
+        cashRegister: cashRegister?.name || 'N/A', // Nom de la caisse
+        currentBalance: currentBalance // Solde de la caisse
+      };
+    });
+
+    // Retourner les informations au client
+    return res.status(200).json({
+      status: 'success',
+      totalBalance: totalBalance, // Solde total de toutes les caisses
+      workers: workerDetails // Détails des employés et leurs caisses
+    });
+
+  } catch (error) {
+    console.error(`ERROR MERCHANT WORKERS: ${error}`);
+    appendErrorLog(`ERROR MERCHANT WORKERS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la recherche des informations du marchand.",
+    });
+  }
+};
+ 
 module.exports = {
   create,
   updatePhoto,
@@ -801,4 +882,5 @@ module.exports = {
   destroyMerchantAdmin,
   merchantCashier,
   allCashregister,
+  merchantWorkers,
 };

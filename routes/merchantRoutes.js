@@ -43,4 +43,7 @@ router.get("/merchant-details", verifyToken, isAdmin, merchantController.merchan
 // DESTROY
 router.delete("/destroy-merchant-admin", verifyToken, isAdmin, merchantController.destroyMerchantAdmin);
 
+// LES UTILISATEURS DU MARCHANT
+router.get("/merchant-workers", verifyToken, isAdmin, merchantController.merchantWorkers);
+
 module.exports = router

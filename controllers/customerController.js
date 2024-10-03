@@ -3,8 +3,10 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const sharp = require("sharp");
 const moment = require("moment");
+const nodemailer = require('nodemailer');
 const { v4: uuidv4 } = require("uuid");
 const {
+  Admin,
   Customer,
   CustomerBalance,
   Transaction,
@@ -718,7 +720,7 @@ const getCustomerTransactions = async (req, res) => {
       } else if (createdAt.isSame(now.subtract(1, "days"), "day")) {
         formattedDate = `Hier, ${createdAt.format("HH:mm")}`;
       } else {
-        formattedDate = createdAt.format("DD MMM YYYY, HH:mm"); // Exemple: "16 juin 2024, 16:11"
+        formattedDate = createdAt.format("DD MMM YYYY, HH:mm");
       }
 
       // Arrondir le montant à 0 chiffre après la virgule
@@ -872,6 +874,64 @@ const getMerchants = async (req, res) => {
   }
 }
 
+const deleteAccount = async (req, res) => {
+  try {
+    const { phone, reason } = req.body;
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le numéro de portable est requis.",
+      });
+    }
+
+    const admins = await Admin.findAll();
+    const adminEmails = admins.map(admin => admin.email);
+
+    if (adminEmails.length === 0) {
+      return res.status(500).json({
+        status: "error",
+        message: "Aucun email d'administrateur trouvé.",
+      });
+    }
+
+    // Création du transporteur nodemailer
+    let transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_SMTP,
+      port: process.env.EMAIL_PORT,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Création du contenu de l'email
+    let mailOptions = {
+      from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
+      to: adminEmails,
+      subject: 'Demande de suppression de compte',
+      text: `L'utilisateur avec le numéro de téléphone ${phone} a demandé la suppression de son compte.\nRaison: ${reason || "Non spécifiée"}`,
+    };
+
+    // Envoyer l'email
+    await transporter.sendMail(mailOptions);
+
+    // Répondre à l'utilisateur après envoi de l'email
+    return res.status(200).json({
+      status: "success",
+      message: "Votre demande de suppression de compte a été envoyée à tous les administrateurs.",
+    });
+    
+  } catch (error) {
+    console.error(`ERROR DELETE CUSTOMER: ${error}`);
+    appendErrorLog(`ERROR DELETE CUSTOMER: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la suppression du compte.",
+    });
+  }
+}
+
 module.exports = {
   login,
   create,
@@ -882,5 +942,6 @@ module.exports = {
   updateName,
   getCustomerTransactions,
   destroy,
-  getMerchants
+  getMerchants,
+  deleteAccount
 };
