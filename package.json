@@ -4,7 +4,8 @@
   "description": "API NYOTA PAY",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org nyota-7a --project node ./out && sentry-cli sourcemaps upload --org nyota-7a --project node ./out"
   },
   "keywords": [
     "API",
@@ -14,6 +15,7 @@
   "author": "Rubens Alban",
   "license": "ISC",
   "dependencies": {
+    "@sentry/cli": "^2.36.6",
     "@sentry/node": "^8.33.1",
     "@sentry/profiling-node": "^8.33.1",
     "bcrypt": "^5.1.1",

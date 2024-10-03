@@ -2,3 +2,5 @@ node_modules
 public/*
 logs/*
 package-lock.json
+# Sentry Config File
+.sentryclirc
