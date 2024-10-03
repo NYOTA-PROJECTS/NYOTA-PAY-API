@@ -17,6 +17,136 @@
 
 </details>
 
+
+### RECHARGER LE SOLDE DU MARCHANT
+- **URL**: `/api/v1/merchant/recharge`
+- **Méthode**: `PUT`
+- **Description**: Recharger le solde d'un marchants.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `merchantId` (string): Identifiant du marchant.
+    - `amount` (string): Montant à recharger.
+
+
+### LISTE DE TOUS LES MARCHANTS
+- **URL**: `/api/v1/merchant/all-merchants`
+- **Méthode**: `GET`
+- **Description**: Récupération de la liste des marchants.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+
+
+### SOMME DE LA SOLDE DES MARCHANTS
+- **URL**: `/api/v1/merchant/all-balance`
+- **Méthode**: `GET`
+- **Description**: Récupération le solde total marchants.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+
+
+### LISTE DE TOUS LES ADMINS DU MARCHANTS
+- **URL**: `/api/v1/merchant/all-merchant-admins`
+- **Méthode**: `GET`
+- **Description**: Récupération le solde total marchants.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+    - `merchantId` (string): Identifiant du marchant.
+
+
+### LISTE DE TOUTES LES CAISSES DU MARCHANTS
+- **URL**: `/api/v1/merchant/all-merchant-cashiers`
+- **Méthode**: `GET`
+- **Description**: Récupération la liste de toute les caisses du marchant.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+    - `merchantId` (string): Identifiant du marchant.
+
+
+### LISTE DES CAISSES DU MARCHANT
+- **URL**: `/api/v1/merchant/merchant-cashier`
+- **Méthode**: `GET`
+- **Description**: Récupération la liste de toute les caisses du marchant.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+    - `merchantId` (string): Identifiant du marchant.
+
+
+### DETAILS DU MARCHANT
+- **URL**: `/api/v1/merchant/merchant-details`
+- **Méthode**: `GET`
+- **Description**: Récupération les détails du marchants.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+    - `merchantId` (string): Identifiant du marchant.
+
+
+### DETAILS DU MARCHANT
+- **URL**: `/api/v1/merchant/destroy-merchant-admin`
+- **Méthode**: `DELETE`
+- **Description**: Supprimer l'admin d'un marchant.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `merchantAdminId` (string): Identifiant de l'admin du marchant.
+
+
+### LES UTILISATEURS DU MARCHANT
+- **URL**: `/api/v1/merchant/merchant-workers`
+- **Méthode**: `GET`
+- **Description**: Récupération les détails du marchants.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+    - `merchantId` (string): Identifiant du marchant.
+
+
+### CRÉATION POINT DE VENTE
+- **URL**: `/api/v1/pointofsell/create`
+- **Méthode**: `POST`
+- **Description**: Création d'un point ce vente.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `merchantId` (string): Identifiant du marchant.
+    - `name` (string): Nom du point de vente.
+
+
+### LISTE DES POINT DE VENTE
+- **URL**: `/api/v1/pointofsell/list`
+- **Méthode**: `GET`
+- **Description**: Liste des points de ventes.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+    - `merchantId` (string): Identifiant du marchant.
+
+
+### SUPPRÉSSION DUN POINT DE VENTE
+- **URL**: `/api/v1/pointofsell/delete`
+- **Méthode**: `DELETE`
+- **Description**: Suppréssion d'un point de ventes.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `posId` (string): Identifiant du point de vente.
+
+
+### CRÉATION COMPTE ADMIN DU MARCHANT
+- **URL**: `/api/v1/merchant/create-admin`
+- **Méthode**: `POST`
+- **Description**: Création d'un compte admin marchant.
+- **Header**:
+    - `Authorization` (string): Token Bearer de l'admin.
+- **Body**:
+    - `merchantId` (string): Identifiant du marchant.
+    - `firstname` (string): Prénom de l'admin du marchant.
+    - `lastname` (string): Nom de l'admin du marchant.
+    - `email` (string): Email de l'admin du marchant.
+    - `phone` (string): Téléphone de l'admin marchant.
+    - `password` (string): Mot de passe de l'admin du marchant.
+
+
+</details>
+
 ## CATEGORIES
 <details>
 <summary>REQUEST</summary>
@@ -68,21 +198,6 @@
   ]
 }
 ```
-
-### CRÉATION COMPTE ADMIN DU MARCHANT
-- **URL**: `/api/v1/merchant/create-admin`
-- **Méthode**: `POST`
-- **Description**: Création d'un compte admin marchant.
-- **Header**:
-    - `Authorization` (string): Token Bearer de l'admin.
-- **Body**:
-    - `merchantId` (string): Identifiant du marchant.
-    - `firstname` (string): Prénom de l'admin du marchant.
-    - `lastname` (string): Nom de l'admin du marchant.
-    - `email` (string): Email de l'admin du marchant.
-    - `phone` (string): Téléphone de l'admin marchant.
-    - `password` (string): Mot de passe de l'admin du marchant.
-
 
 ### MISE À JOUR DE LA PHOTO DU MARCHANT
 - **URL**: `/api/v1/merchant/update-photo`
