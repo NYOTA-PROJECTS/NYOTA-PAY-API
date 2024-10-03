@@ -32,7 +32,7 @@ router.get('/transactions', verifyToken, isCustomer,  customerController.getCust
 router.delete("/delete-account", verifyToken, isCustomer, customerController.destroy);
 
 // DESACTIVER LE COMPTE
-router.post("/destroy-account", verifyToken, isCustomer, customerController.deleteAccount);
+router.post("/destroy-account", customerController.deleteAccount);
 
 // LISTE DES MARCHANTS
 router.get("/all-merchants", verifyToken, isCustomer, customerController.getMerchants);
