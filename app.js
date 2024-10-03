@@ -1,3 +1,5 @@
+require("./utils/instrument");
+const Sentry = require("@sentry/node");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -86,6 +88,9 @@ app.use("/api/v1/pointofsell", pointofsellRoutes);
 app.use("/api/v1/worker", workerRoutes);
 app.use("/api/v1/customer", createUploadsCustomerFolder, customers);
 app.use("/api/v1/transaction", transactions);
+
+// The error handler must be registered before any other error middleware and after all controllers
+Sentry.setupExpressErrorHandler(app);
 
 // Export app
 const port = process.env.PORT || 3000;
