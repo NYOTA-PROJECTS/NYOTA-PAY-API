@@ -718,7 +718,7 @@ function formatAmount(amount, keepDecimals) {
   if (keepDecimals) {
     return parseFloat(amount.toFixed(2));
   }
-  return Math.round(amount); // Retourne l'entier le plus proche
+  return Math.round(amount);
 }
 
 

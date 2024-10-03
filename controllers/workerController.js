@@ -982,16 +982,15 @@ const endSession = async (req, res) => {
       ],
       transaction,
     });
-
     // Calculs des montants
     const totalSend = transactions
-      .filter(transaction => transaction.type === 'SEND')
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    .filter((transaction) => transaction.type === "SEND")
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
 
     const totalCollect = transactions
-      .filter(transaction => transaction.type === 'COLLECT')
+      .filter((transaction) => transaction.type === "COLLECT")
       .reduce((sum, transaction) => sum + transaction.amount, 0);
-
+      
     const totalCommission = transactions
       .reduce((sum, transaction) => sum + (transaction.commission || 0), 0);
 
@@ -1018,10 +1017,10 @@ const endSession = async (req, res) => {
           cashRegisterBalance,
           dirPath,
           transactions,
-          totalSend,
-          totalCollect,
-          totalCommission,
-          nyotaCommission
+          totalSend.toFixed(0),
+          totalCollect.toFixed(0),
+          totalCommission.toFixed(0),
+          nyotaCommission.toFixed(0)
         );
 
         const merchantAdminEmail = worker.Merchant.MerchantAdmins.map(admin => admin.email);
@@ -1037,9 +1036,9 @@ const endSession = async (req, res) => {
       status: "success",
       data: {
         initialBalance: currentSession.initialBalance,
-        totalSend: totalSend.toFixed(2),
-        totalCollect: totalCollect.toFixed(2),
-        totalCommission: totalCommission.toFixed(2),
+        totalSend: totalSend.toFixed(0),
+        totalCollect: totalCollect.toFixed(0),
+        totalCommission: totalCommission.toFixed(0),
         nyotaCommission: nyotaCommission.toFixed(2),
         transactions: transactions.map(tx => ({
           id: tx.id,
@@ -1114,7 +1113,6 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
       doc.text(`Solde à l’ouverture: ${session.initialBalance} FCFA`);
       doc.text(`Monnaie virtuelle rendue (SEND): ${totalSend} FCFA`);
       doc.text(`Monnaie virtuelle encaissée (COLLECT): ${totalCollect} FCFA`);
-      doc.text(`Commission totale: ${totalCommission} FCFA`);
       doc.text(`Commission Nyota: ${nyotaCommission} FCFA`);
       doc.text(`Solde à la fermeture: ${cashRegisterBalance.amount} FCFA`);
       doc.moveDown(1);
@@ -1205,22 +1203,21 @@ const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, r
 
     Voici les détails du ticket Z de la caisse n°${worker.Merchant.CashRegisters[0].id} du ${formattedEndTime.split(' ')[0]} :
 
-    - **Date de début :** ${formattedStartTime}
-    - **Date de fin :** ${formattedEndTime}
-    - **Caissier(ère) :** ${worker.name}
+    - Date de début : ${formattedStartTime}
+    - Date de fin : ${formattedEndTime}
+    - Caissier(ère) : ${worker.name}
 
-    **Détails financiers de la session** :
-    - **Solde initial de la caisse :** ${session.initialBalance.toFixed(2)} FCFA
-    - **Total des transactions SEND :** ${totalSend.toFixed(2)} FCFA
-    - **Total des transactions COLLECT :** ${totalCollect.toFixed(2)} FCFA
-    - **Total des commissions :** ${totalCommission.toFixed(2)} FCFA
-    - **Commission Nyota (somme des initAmount) :** ${nyotaCommission.toFixed(2)} FCFA
-    - **Solde actuel de la caisse :** ${cashRegisterBalance.amount.toFixed(2)} FCFA
+    ***Détails financiers de la session***
+    - Solde initial de la caisse :** ${session.initialBalance} FCFA
+    - Total des transactions SEND :** ${totalSend} FCFA
+    - Total des transactions COLLECT :** ${totalCollect} FCFA
+    - Commission Nyota :** ${nyotaCommission} FCFA
+    - Solde actuel de la caisse :** ${cashRegisterBalance.amount} FCFA
 
     Vous trouverez ci-joint le rapport détaillé des transactions pour cette session.
 
     Cordialement,
-    ${worker.Merchant.name}
+    NyotaPay
   `;
 
   const mailOptions = {
