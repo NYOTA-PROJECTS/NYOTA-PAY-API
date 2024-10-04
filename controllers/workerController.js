@@ -881,10 +881,15 @@ const getCustomerInfos = async (req, res) => {
 
 const endSession = async (req, res) => {
   const transaction = await sequelize.transaction();
+  const { cashRegisterId } = req.body;
   try {
     const token = req.headers.authorization;
     if (!token) {
       return res.status(401).json({ status: "error", message: "Token non fourni." });
+    }
+
+    if (!cashRegisterId) {
+      return res.status(400).json({ status: "error", message: "Les informations ne sont pas valides." });
     }
 
     if (!token.startsWith("Bearer ")) {
@@ -913,6 +918,7 @@ const endSession = async (req, res) => {
         include: [
           {
             model: CashRegister,
+            where: { id: cashRegisterId },
             attributes: ["id", "name"],
             include: {
               model: PointOfSale,
@@ -953,7 +959,6 @@ const endSession = async (req, res) => {
     await currentSession.save({ fields: ["endTime"], transaction });
 
     // Récupérer le solde de la caisse
-    const cashRegisterId = worker.Merchant.CashRegisters[0].id;
     const cashRegisterBalance = await CashRegisterBalance.findOne({
       where: { cashregisterId: cashRegisterId },
       transaction,
@@ -965,6 +970,9 @@ const endSession = async (req, res) => {
         message: "Solde de la caisse non trouvé.",
       });
     }
+
+    const cashRegister = worker.Merchant.CashRegisters[0];
+    const pointOfSale = cashRegister.PointOfSale;
 
     // Récupérer toutes les transactions pour la session
     const transactions = await Transaction.findAll({
@@ -1049,6 +1057,8 @@ const endSession = async (req, res) => {
           commission: tx.commission,
           code: tx.code,
         })),
+        cashRegister: cashRegister.name,  // Nom de la caisse
+        pointOfSale: pointOfSale.urlLink,  // Nom de la caisse
       },
       message: "Session fermée et votre rapport sera envoyé sous peu.",
     });
@@ -1112,9 +1122,10 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
       // Informations de solde
       doc.text(`Solde à l’ouverture: ${session.initialBalance} FCFA`);
       doc.text(`Monnaie virtuelle rendue (SEND): ${totalSend} FCFA`);
-      doc.text(`Monnaie virtuelle encaissée (COLLECT): ${totalCollect} FCFA`);
-      doc.text(`Commission Nyota: ${nyotaCommission} FCFA`);
-      doc.text(`Solde à la fermeture: ${cashRegisterBalance.amount} FCFA`);
+      let totalWithPercentage = totalCollect * 1.035;
+      doc.text(`Monnaie virtuelle encaissée (COLLECT): ${totalWithPercentage.toFixed(0)} FCFA`);
+      doc.text(`Commission Nyota: ${totalCommission} FCFA`);
+      doc.text(`Solde à la fermeture: ${cashRegisterBalance.amount.toFixed(0)} FCFA`);
       doc.moveDown(1);
 
       // Relevé de transaction
@@ -1122,17 +1133,21 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
       doc.moveDown(1);
 
       // Créer le tableau manuellement avec gestion des pages
+
       const tableTop = doc.y;
       const itemHeight = 20;
       const col1X = 60;
       const col2X = 200;
-      const col3X = 350;
+      const col3X = 300;  // Montant décalé
+      const col4X = 400;  // Nouvelle colonne pour le type de transaction
+      const col5X = 500;  // Commission Nyota décalée
       const pageBottomMargin = doc.page.height - 50;
 
       const renderTableHeader = () => {
         doc.fontSize(12).text('Téléphone client', col1X, tableTop, { underline: true });
         doc.text('Montant', col2X, tableTop, { underline: true });
-        doc.text('Commission Nyota', col3X, tableTop, { underline: true });
+        doc.text('Type', col3X, tableTop, { underline: true });  // Nouvelle colonne
+        doc.text('Commission Nyota', col4X, tableTop, { underline: true });
       };
 
       // Afficher les en-têtes du tableau
@@ -1152,9 +1167,15 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
 
         doc.fontSize(10).text(transaction.Customer.phone, col1X, tableY);
         doc.text(`${transaction.amount.toFixed(2)} FCFA`, col2X, tableY);
-        doc.text(`${transaction.commission ? transaction.commission.toFixed(2) : 0} FCFA`, col3X, tableY);
+        doc.text(`${transaction.type}`, col3X, tableY); // Type de transaction (SEND/COLLECT)
+        doc.text(
+          `${transaction.commission ? transaction.commission.toFixed(2) : 0} FCFA`,
+          col4X,
+          tableY
+        );
         tableY += itemHeight;
       });
+
 
       // Fin du document
       doc.end();
@@ -1198,6 +1219,7 @@ const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, r
   });
 
   // Construire le corps de l'e-mail avec les informations calculées
+  let totalWithPercentage = totalCollect * 1.035;
   const emailBody = `
     Bonjour,
 
@@ -1210,9 +1232,9 @@ const sendEmailWithPDF = async (worker, session, cashRegisterBalance, pdfPath, r
     ***Détails financiers de la session***
     - Solde initial de la caisse :** ${session.initialBalance} FCFA
     - Total des transactions SEND :** ${totalSend} FCFA
-    - Total des transactions COLLECT :** ${totalCollect} FCFA
-    - Commission Nyota :** ${nyotaCommission} FCFA
-    - Solde actuel de la caisse :** ${cashRegisterBalance.amount} FCFA
+    - Total des transactions COLLECT :** ${totalWithPercentage.toFixed(0)} FCFA
+    - Commission Nyota :** ${totalCommission.toFixed(2)} FCFA
+    - Solde actuel de la caisse :** ${cashRegisterBalance.amount.toFixed(0)} FCFA
 
     Vous trouverez ci-joint le rapport détaillé des transactions pour cette session.
 
