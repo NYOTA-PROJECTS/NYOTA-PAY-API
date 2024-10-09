@@ -852,14 +852,6 @@ const getCustomerInfos = async (req, res) => {
         },
       });
     } else {
-      // Répondre avec les détails du client existant
-      if (customer.firstName === null && customer.lastName === null) {
-         return res.status(404).json({
-           status: "error",
-           message: "Pour réaliser cette opération, le client doit d'abord créer un compte et se connecter à son profil sur l'application mobile client.",
-         })
-      } 
-
       return res.status(200).json({
         status: "success",
         data: {

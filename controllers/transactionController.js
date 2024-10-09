@@ -177,6 +177,7 @@ const renderMonais = async (req, res) => {
     return res.status(200).json({
       status: "success",
       message: "Transaction effectuée avec succès.",
+      data: customerBalance.amount,
     });
   } catch (error) {
     await transaction.rollback();
@@ -402,7 +403,8 @@ const receiveMonais = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      message: "Transaction effectuée avec succès."
+      message: "Transaction effectuée avec succès.",
+      data: customerBalance.amount,
     });
   } catch (error) {
     await transaction.rollback();

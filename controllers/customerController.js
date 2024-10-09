@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const sharp = require("sharp");
 const moment = require("moment");
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 const {
   Admin,
@@ -826,42 +826,45 @@ const destroy = async (req, res) => {
   }
 };
 
-
 const getMerchants = async (req, res) => {
   try {
     const categories = await Category.findAll({
-      include: [{
-        model: Merchant,
-        attributes: ['name', 'cover', 'photo']
-      }]
+      include: [
+        {
+          model: Merchant,
+          attributes: ["name", "cover", "photo"],
+        },
+      ],
     });
 
     if (!categories) {
       return res.status(404).json({
         status: "error",
-        message: "Aucune catégorie trouvée."
+        message: "Aucune catégorie trouvée.",
       });
     }
 
     // Filtrer les catégories qui ont au moins un marchand
-    const filteredCategories = categories.filter(category => category.Merchants.length > 0);
+    const filteredCategories = categories.filter(
+      (category) => category.Merchants.length > 0
+    );
 
     // Transformer les catégories pour les rendre compatibles avec le frontend
-    const formattedCategories = filteredCategories.map(category => {
+    const formattedCategories = filteredCategories.map((category) => {
       return {
         categoryName: category.name,
-        merchants: category.Merchants.map(merchant => ({
+        merchants: category.Merchants.map((merchant) => ({
           name: merchant.name,
           cover: merchant.cover,
-          photo: merchant.photo
-        }))
+          photo: merchant.photo,
+        })),
       };
     });
 
     return res.status(200).json({
       status: "success",
       message: "Catégories et marchands récupérés avec succès.",
-      data: formattedCategories
+      data: formattedCategories,
     });
   } catch (error) {
     console.error(`ERROR GET CUSTOMER TRANSACTIONS: ${error}`);
@@ -872,7 +875,7 @@ const getMerchants = async (req, res) => {
         "Une erreur s'est produite lors de la recuperation des transactions.",
     });
   }
-}
+};
 
 const deleteAccount = async (req, res) => {
   try {
@@ -885,7 +888,7 @@ const deleteAccount = async (req, res) => {
     }
 
     const admins = await Admin.findAll();
-    const adminEmails = admins.map(admin => admin.email);
+    const adminEmails = admins.map((admin) => admin.email);
 
     if (adminEmails.length === 0) {
       return res.status(500).json({
@@ -909,8 +912,10 @@ const deleteAccount = async (req, res) => {
     let mailOptions = {
       from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
       to: adminEmails,
-      subject: 'Demande de suppression de compte',
-      text: `L'utilisateur avec le numéro de téléphone ${phone} a demandé la suppression de son compte.\nRaison: ${reason || "Non spécifiée"}`,
+      subject: "Demande de suppression de compte",
+      text: `L'utilisateur avec le numéro de téléphone ${phone} a demandé la suppression de son compte.\nRaison: ${
+        reason || "Non spécifiée"
+      }`,
     };
 
     // Envoyer l'email
@@ -919,9 +924,9 @@ const deleteAccount = async (req, res) => {
     // Répondre à l'utilisateur après envoi de l'email
     return res.status(200).json({
       status: "success",
-      message: "Votre demande de suppression de compte a été envoyée à tous les administrateurs.",
+      message:
+        "Votre demande de suppression de compte a été envoyée à tous les administrateurs.",
     });
-    
   } catch (error) {
     console.error(`ERROR DELETE CUSTOMER: ${error}`);
     appendErrorLog(`ERROR DELETE CUSTOMER: ${error}`);
@@ -930,7 +935,87 @@ const deleteAccount = async (req, res) => {
       message: "Une erreur s'est produite lors de la suppression du compte.",
     });
   }
-}
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le numéro de portable est requis.",
+      });
+    }
+
+    const congoPhoneRegex = /^(04|05|06)\d{7}$/;
+    if (!congoPhoneRegex.test(phone)) {
+      return res.status(400).json({
+        status: "error",
+        message:
+          "Le numéro de téléphone doit être un numéro valide du Congo-Brazzaville.",
+      });
+    }
+
+    // Recherche du client par son numéro de téléphone
+    const customer = await Customer.findOne({ where: { phone } });
+
+    if (!customer) {
+      return res.status(404).json({
+        status: "error",
+        message: "Le client n'existe pas.",
+      });
+    }
+
+    // Envoyer un email au admin que ce n'uméro de téléphone é demandé a réinitialiser le mot de passe
+    const admins = await Admin.findAll();
+    const adminEmails = admins.map((admin) => admin.email);
+
+    if (adminEmails.length === 0) {
+      return res.status(500).json({
+        status: "error",
+        message: "Aucun email d'administrateur è.",
+      });
+    }
+
+    // Création du transporteur nodemailer
+    let transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_SMTP,
+      port: process.env.EMAIL_PORT,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Création du contenu de l'email
+    let mailOptions = {
+      from: `NYOTA PAY<${process.env.EMAIL_USER}>`,
+      to: adminEmails,
+      subject: "Demande de réinitialisation du mot de passe",
+      text: `Le client ${customer.firstName} ${customer.lastName} avec le numéro de portable ${phone} a demandé la réinitialisation du mot de passe.`,
+    };
+
+    // Envoyer l'email
+    await transporter.sendMail(mailOptions);
+
+    // Répondre à l'utilisateur après envoi de l'email
+    return res.status(200).json({
+      status: "success",
+      message:
+        "Votre demande de réinitialisation de mot de passe a été prise en compte, vous serez contacté dans les plus brefs delés afin de récuperer votre mot de passe. Merci.",
+    });
+  } catch (error) {
+    console.error(`ERROR RESET CUSTOMER PASSWORD: ${error}`);
+    appendErrorLog(`ERROR RESET CUSTOMER PASSWORD: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la modification du mot de passe.",
+    });
+  }
+};
 
 module.exports = {
   login,
@@ -943,5 +1028,6 @@ module.exports = {
   getCustomerTransactions,
   destroy,
   getMerchants,
-  deleteAccount
+  deleteAccount,
+  resetPassword,
 };

@@ -37,4 +37,7 @@ router.post("/destroy-account", customerController.deleteAccount);
 // LISTE DES MARCHANTS
 router.get("/all-merchants", verifyToken, isCustomer, customerController.getMerchants);
 
+// RÉINITIALISER LE MOT DE PASSE
+router.put("/reset-password", customerController.resetPassword);
+
 module.exports = router;
