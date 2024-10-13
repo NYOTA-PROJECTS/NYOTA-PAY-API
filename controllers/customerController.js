@@ -12,6 +12,7 @@ const {
   Transaction,
   Merchant,
   Category,
+  MerchantPicture,
 } = require("../models");
 const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -844,7 +845,10 @@ const getMerchants = async (req, res) => {
           attributes: {
             include: [
               [
-                sequelize.fn("COUNT", sequelize.col("Merchants->Transactions.id")),
+                sequelize.fn(
+                  "COUNT",
+                  sequelize.col("Merchants->Transactions.id")
+                ),
                 "merchantTransactionCount",
               ],
             ],
@@ -891,7 +895,10 @@ const getMerchants = async (req, res) => {
     const formattedCategories = categories.map((category) => {
       // Trier les marchands à l'intérieur de chaque catégorie par le nombre de transactions
       const sortedMerchants = category.Merchants.sort((a, b) => {
-        return b.dataValues.merchantTransactionCount - a.dataValues.merchantTransactionCount;
+        return (
+          b.dataValues.merchantTransactionCount -
+          a.dataValues.merchantTransactionCount
+        );
       });
 
       return {
@@ -908,20 +915,18 @@ const getMerchants = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      message: "Catégories et marchands récupérés avec succès.",
       data: formattedCategories,
     });
   } catch (error) {
-    console.error(`ERROR GET CUSTOMER TRANSACTIONS: ${error}`);
-    appendErrorLog(`ERROR GET CUSTOMER TRANSACTIONS: ${error}`);
+    console.error(`ERROR GET MERCHANT LIST: ${error}`);
+    appendErrorLog(`ERROR GET MERCHANT LIST: ${error}`);
     return res.status(500).json({
       status: "error",
       message:
-        "Une erreur s'est produite lors de la récupération des transactions.",
+        "Une erreur s'est produite lors de la récupération des marchants.",
     });
   }
 };
-
 
 const deleteAccount = async (req, res) => {
   try {
@@ -1063,6 +1068,66 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const getMerchantDetails = async (req, res) => {
+  try {
+    const merchantId = req.headers.merchantid;
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "Identifiant du marchant requis.",
+      });
+    }
+
+    const merchant = await Merchant.findOne({
+      where: { id: merchantId },
+      attributes: [
+        "whatsapp",
+        "facebook",
+        "tiktok",
+        "instagram",
+      ],
+      include: [
+        {
+          model: MerchantPicture,
+          attributes: ["photo"],
+        },
+      ],
+    });
+
+    if (!merchant) {
+      return res.status(404).json({
+        status: "error",
+        message: "Marchand non trouvé.",
+      });
+    }
+
+    // Formater la réponse pour inclure les informations des réseaux sociaux et les photos
+    const pictures = merchant.MerchantPictures.map((picture) => picture.photo);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        whatsapp: merchant.whatsapp,
+        facebook: merchant.facebook,
+        tiktok: merchant.tiktok,
+        instagram: merchant.instagram,
+        pictures: pictures.reduce((acc, photo) => {
+          acc[`photo`] = photo;
+          return acc;
+        }, {}),
+      },
+    });
+  } catch (error) {
+    console.error(`ERROR GET MERCHANT DETAILS: ${error}`);
+    appendErrorLog(`ERROR GET MERCHANT DETAILS: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message:
+        "Une erreur s'est produite lors de la récupération des informations du marchant.",
+    });
+  }
+};
+
 module.exports = {
   login,
   create,
@@ -1076,4 +1141,5 @@ module.exports = {
   getMerchants,
   deleteAccount,
   resetPassword,
+  getMerchantDetails,
 };
