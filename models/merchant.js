@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(models.CashRegister, { foreignKey: 'merchantId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
       this.hasMany(models.Worker, { foreignKey: 'merchantId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
       this.hasMany(models.Transaction, { foreignKey: 'merchantId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.hasMany(models.MerchantPicture, { foreignKey: 'merchantId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }
   }
   Merchant.init({
@@ -31,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     cover: DataTypes.STRING,
     photo: DataTypes.STRING,
+    whatsapp: DataTypes.STRING,
+    facebook: DataTypes.STRING,
+    tiktok: DataTypes.STRING,
+    instagram: DataTypes.STRING, 
   }, {
     sequelize,
     modelName: 'Merchant',
