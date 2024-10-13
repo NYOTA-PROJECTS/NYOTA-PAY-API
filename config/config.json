@@ -3,7 +3,7 @@
     "username": "postgres",
     "password": "Admin@Casino2024",
     "database": "nyotapay_dev",
-    "host": "127.0.0.1",
+    "host": "194.163.180.27",
     "dialect": "postgres",
     "port": 5432,
     "timezone": "Africa/Brazzaville"
@@ -21,7 +21,7 @@
     "username": "postgres",
     "password": "Admin@Casino2024",
     "database": "nyotapay_prod",
-    "host": "127.0.0.1",
+    "host": "194.163.180.27",
     "dialect": "postgres",
     "port": 5432,
     "timezone": "Africa/Brazzaville"

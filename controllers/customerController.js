@@ -13,6 +13,7 @@ const {
   Merchant,
   Category,
 } = require("../models");
+const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 
 const login = async (req, res) => {
@@ -832,9 +833,51 @@ const getMerchants = async (req, res) => {
       include: [
         {
           model: Merchant,
-          attributes: ["name", "cover", "photo"],
+          attributes: ["id", "name", "cover", "photo"],
+          include: [
+            {
+              model: Transaction,
+              attributes: [],
+            },
+          ],
+          // Compter le nombre de transactions par marchand
+          attributes: {
+            include: [
+              [
+                sequelize.fn("COUNT", sequelize.col("Merchants->Transactions.id")),
+                "merchantTransactionCount",
+              ],
+            ],
+          },
+          group: ["Merchant.id"],
         },
       ],
+      // Ajouter une condition pour ne récupérer que les catégories ayant au moins un marchand
+      where: sequelize.literal(`
+        (
+          SELECT COUNT(*)
+          FROM "Merchants"
+          WHERE "Merchants"."categoryId" = "Category"."id"
+        ) > 0
+      `),
+      // Avoir uniquement les catégories et les marchands triés par transaction
+      attributes: {
+        include: [
+          // Utiliser un simple COUNT au niveau de la catégorie
+          [
+            sequelize.literal(`(
+              SELECT COUNT("Transactions"."id")
+              FROM "Transactions"
+              JOIN "Merchants" ON "Transactions"."merchantId" = "Merchants"."id"
+              WHERE "Merchants"."categoryId" = "Category"."id"
+            )`),
+            "categoryTransactionCount",
+          ],
+        ],
+      },
+      group: ["Category.id", "Merchants.id"],
+      // Trier les catégories par le nombre total de transactions
+      order: [[sequelize.literal(`"categoryTransactionCount"`), "DESC"]],
     });
 
     if (!categories) {
@@ -844,16 +887,18 @@ const getMerchants = async (req, res) => {
       });
     }
 
-    // Filtrer les catégories qui ont au moins un marchand
-    const filteredCategories = categories.filter(
-      (category) => category.Merchants.length > 0
-    );
-
     // Transformer les catégories pour les rendre compatibles avec le frontend
-    const formattedCategories = filteredCategories.map((category) => {
+    const formattedCategories = categories.map((category) => {
+      // Trier les marchands à l'intérieur de chaque catégorie par le nombre de transactions
+      const sortedMerchants = category.Merchants.sort((a, b) => {
+        return b.dataValues.merchantTransactionCount - a.dataValues.merchantTransactionCount;
+      });
+
       return {
         categoryName: category.name,
-        merchants: category.Merchants.map((merchant) => ({
+        totalTransactions: category.dataValues.categoryTransactionCount, // Nombre total de transactions de la catégorie
+        merchants: sortedMerchants.map((merchant) => ({
+          id: merchant.id,
           name: merchant.name,
           cover: merchant.cover,
           photo: merchant.photo,
@@ -872,10 +917,11 @@ const getMerchants = async (req, res) => {
     return res.status(500).json({
       status: "error",
       message:
-        "Une erreur s'est produite lors de la recuperation des transactions.",
+        "Une erreur s'est produite lors de la récupération des transactions.",
     });
   }
 };
+
 
 const deleteAccount = async (req, res) => {
   try {
