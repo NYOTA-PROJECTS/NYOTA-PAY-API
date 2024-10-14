@@ -32,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     cover: DataTypes.STRING,
     photo: DataTypes.STRING,
+    openingTime: DataTypes.STRING,
     whatsapp: DataTypes.STRING,
     facebook: DataTypes.STRING,
     tiktok: DataTypes.STRING,

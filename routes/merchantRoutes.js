@@ -2,6 +2,7 @@ const express = require("express");
 const { verifyToken, isAdmin, isAdminOrMerchant } = require("../middlewares/authMiddleware");
 const merchantController = require("../controllers/merchantController");
 const upload = require("../utils/merchantMulterConfig");
+const picture = require("../utils/merchantPictureMulterConfig");
 const router = express.Router();
 
 // CREATE
@@ -45,5 +46,8 @@ router.delete("/destroy-merchant-admin", verifyToken, isAdmin, merchantControlle
 
 // LES UTILISATEURS DU MARCHANT
 router.get("/merchant-workers", verifyToken, isAdmin, merchantController.merchantWorkers);
+
+// MISE EN LIGNE DES PHOTOS DU MARCHANT
+router.post("/merchant-photo", verifyToken, isAdminOrMerchant, picture.single("photo"), merchantController.merchantPhotos);
 
 module.exports = router

@@ -1081,6 +1081,7 @@ const getMerchantDetails = async (req, res) => {
     const merchant = await Merchant.findOne({
       where: { id: merchantId },
       attributes: [
+        "openingTime",
         "whatsapp",
         "facebook",
         "tiktok",
@@ -1106,15 +1107,14 @@ const getMerchantDetails = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
+      message: "Détails du marchand récupérés avec succès.",
       data: {
+        openingTime: merchant.openingTime,
         whatsapp: merchant.whatsapp,
         facebook: merchant.facebook,
         tiktok: merchant.tiktok,
         instagram: merchant.instagram,
-        pictures: pictures.reduce((acc, photo) => {
-          acc[`photo`] = photo;
-          return acc;
-        }, {}),
+        pictures: pictures,
       },
     });
   } catch (error) {

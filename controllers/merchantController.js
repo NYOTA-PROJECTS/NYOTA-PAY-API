@@ -8,6 +8,7 @@ const {
   Worker,
   CashRegister,
   CashRegisterBalance,
+  MerchantPicture,
 } = require("../models");
 const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
@@ -691,17 +692,17 @@ const merchantCashier = async (req, res) => {
     // Récupérer les caisses enregistreuses (CashRegister) avec leurs soldes (CashRegisterBalance) et le lien du point de vente (PointOfSale)
     const cashRegisters = await CashRegister.findAll({
       where: { merchantId },
-      attributes: ['name', 'minBalance'],
+      attributes: ["name", "minBalance"],
       include: [
         {
           model: CashRegisterBalance,
-          attributes: ['amount'],
+          attributes: ["amount"],
         },
         {
           model: PointOfSale,
-          attributes: ['urlLink'],
-        }
-      ]
+          attributes: ["urlLink"],
+        },
+      ],
     });
 
     // Si aucune caisse enregistreuse n'est trouvée
@@ -713,33 +714,33 @@ const merchantCashier = async (req, res) => {
     }
 
     // Préparer la réponse JSON avec les informations récupérées
-    const cashierDetails = cashRegisters.map(cashRegister => ({
+    const cashierDetails = cashRegisters.map((cashRegister) => ({
       id: cashRegister.id,
       name: cashRegister.name,
       minAmount: cashRegister.minBalance,
       amount: cashRegister.CashRegisterBalance?.amount || 0,
-      pos: cashRegister.PointOfSale?.urlLink || 'N/A', 
+      pos: cashRegister.PointOfSale?.urlLink || "N/A",
     }));
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: cashierDetails,
     });
-
   } catch (error) {
     console.error(`ERROR MERCHANT CASHIER: ${error}`);
     appendErrorLog(`ERROR MERCHANT CASHIER: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recherche des informations du marchand.",
+      message:
+        "Une erreur s'est produite lors de la recherche des informations du marchand.",
     });
   }
-}
+};
 
 const allCashregister = async (req, res) => {
   try {
     const merchantId = req.headers.merchantid;
-    
+
     if (!merchantId) {
       return res.status(400).json({
         status: "error",
@@ -754,38 +755,38 @@ const allCashregister = async (req, res) => {
         message: "Le compte du marchand n'existe pas.",
       });
     }
-    
+
     const cashregisters = await CashRegister.findAll({
       where: { merchantId },
-      attributes: ['id', 'name'],
+      attributes: ["id", "name"],
     });
-    
+
     if (!cashregisters || cashregisters.length === 0) {
       return res.status(404).json({
         status: "error",
         message: "Aucune caisse enregistreuse trouvée pour ce marchand.",
       });
     }
-    
-    const cashregisterDetails = cashregisters.map(cashregister => ({
+
+    const cashregisterDetails = cashregisters.map((cashregister) => ({
       id: cashregister.id,
       name: cashregister.name,
     }));
-    
+
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: cashregisterDetails,
     });
-    
   } catch (error) {
     console.error(`ERROR ALL CASHREGISTER: ${error}`);
     appendErrorLog(`ERROR ALL CASHREGISTER: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recherche de tous les caisses enregistreuses.",
+      message:
+        "Une erreur s'est produite lors de la recherche de tous les caisses enregistreuses.",
     });
   }
-}
+};
 
 const merchantWorkers = async (req, res) => {
   try {
@@ -811,16 +812,18 @@ const merchantWorkers = async (req, res) => {
     // Récupérer les employés (Workers) du marchand
     const workers = await Worker.findAll({
       where: { merchantId },
-      attributes: ['name', 'phone', 'createdAt'] // Sélectionner les informations des employés
+      attributes: ["name", "phone", "createdAt"], // Sélectionner les informations des employés
     });
 
     // Récupérer toutes les caisses enregistreuses du marchand avec leur solde actuel
     const cashRegisters = await CashRegister.findAll({
       where: { merchantId },
-      include: [{
-        model: CashRegisterBalance,
-        attributes: ['amount'] // Récupérer le solde de chaque caisse
-      }]
+      include: [
+        {
+          model: CashRegisterBalance,
+          attributes: ["amount"], // Récupérer le solde de chaque caisse
+        },
+      ],
     });
 
     // Si aucun employé n'est trouvé
@@ -846,28 +849,88 @@ const merchantWorkers = async (req, res) => {
         lastName: worker.lastName,
         phone: worker.phone,
         createdAt: worker.createdAt,
-        cashRegister: cashRegister?.name || 'N/A', // Nom de la caisse
-        currentBalance: currentBalance // Solde de la caisse
+        cashRegister: cashRegister?.name || "N/A", // Nom de la caisse
+        currentBalance: currentBalance, // Solde de la caisse
       };
     });
 
     // Retourner les informations au client
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       totalBalance: totalBalance, // Solde total de toutes les caisses
-      workers: workerDetails // Détails des employés et leurs caisses
+      workers: workerDetails, // Détails des employés et leurs caisses
     });
-
   } catch (error) {
     console.error(`ERROR MERCHANT WORKERS: ${error}`);
     appendErrorLog(`ERROR MERCHANT WORKERS: ${error}`);
     return res.status(500).json({
       status: "error",
-      message: "Une erreur s'est produite lors de la recherche des informations du marchand.",
+      message:
+        "Une erreur s'est produite lors de la recherche des informations du marchand.",
     });
   }
 };
- 
+
+const merchantPhotos = async (req, res) => {
+  try {
+    const { merchantId } = req.body;
+    const host = req.get("host");
+    const photo = req.file;
+
+    if (!merchantId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant du marchand est requis.",
+      });
+    }
+
+    if (!photo) {
+      return res.status(400).json({
+        status: "error",
+        message: "La photo du marchand est requise.",
+      });
+    }
+
+    const merchant = await Merchant.findOne({ where: { id: merchantId } });
+    if (!merchant) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le compte du marchand n'existe pas.",
+      });
+    }
+
+    let imageUrl = null;
+    if (req.file) {
+      const fileUrl = `pictures/${req.file.filename}`;
+      imageUrl = `${req.protocol}://${host}/${fileUrl}`;
+    }
+
+    await MerchantPicture.create(
+      {
+        photo: imageUrl,
+        merchantId,
+      },
+      {
+        where: {
+          merchantId,
+        },
+      }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "La photo à été publié avec succès.",
+    });
+  } catch (error) {
+    console.error(`ERROR UPLOAD PICTURE: ${error}`);
+    appendErrorLog(`ERROR UPLOAD PICTURE: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors du chargement de l'image.",
+    });
+  }
+};
+
 module.exports = {
   create,
   updatePhoto,
@@ -883,4 +946,5 @@ module.exports = {
   merchantCashier,
   allCashregister,
   merchantWorkers,
+  merchantPhotos,
 };

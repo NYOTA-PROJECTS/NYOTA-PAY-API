@@ -52,6 +52,15 @@ const createUploadsCustomerFolder = (req, res, next) => {
   next();
 };
 
+const createUploadsMerchantPictureFolder = (req, res, next) => {
+  const folderPath = "public/pictures";
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+  next();
+};
+
+
 // Public directory
 app.use(express.static("public"));
 
@@ -82,7 +91,7 @@ app.use(
 // Routes
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/category", categoryRoutes);
-app.use("/api/v1/merchant", createUploadsMerchantFolder, merchantRoutes);
+app.use("/api/v1/merchant", createUploadsMerchantFolder, createUploadsMerchantPictureFolder, merchantRoutes);
 app.use("/api/v1/cashregister", cashregisterRoutes);
 app.use("/api/v1/pointofsell", pointofsellRoutes);
 app.use("/api/v1/worker", workerRoutes);
