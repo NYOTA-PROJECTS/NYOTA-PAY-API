@@ -231,7 +231,7 @@ async function sendCustomerNotificationOrSMS(customer, merchantName, amount, new
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const client = require("twilio")(accountSid, authToken);
     await client.messages.create({
-      body: `Vous avez reçu ${amount} FCFA de ${merchantName}. Votre solde est de ${newBalance} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte. 👉🏽 https://nyotapay.com/landingpage`,
+      body: `Vous avez reçu ${amount} FCFA de ${merchantName}. Votre solde est de ${newBalance} FCFA. Transaction N° ${transactionCode}. Téléchargez l’application NYOTAPAY pour accéder à votre compte. 👉🏽 https://nyotapay.nyota-apps.com/landing`,
       from: "NYOTAPAY",
       to: `+242${customer.phone}`,
     });
