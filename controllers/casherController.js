@@ -95,7 +95,6 @@ const create = async (req, res) => {
   }
 };
 
-
 const allAciveCasher = async (req, res) => {
     try {
         const token = req.headers.authorization;
@@ -183,7 +182,6 @@ const allAciveCasher = async (req, res) => {
         });
     }
 }
-
 
 const startSession = async (req, res) => {
   try {

@@ -100,7 +100,7 @@ const login = async (req, res) => {
     const token = jwt.sign(
       {
         id: pointOfSell.id,
-        role: "isPointOfSell",
+        role: "isCashier",
       },
       process.env.JWT_SECRET
     );
