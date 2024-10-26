@@ -194,16 +194,16 @@ const startSession = async (req, res) => {
       });
     }
 
-    const cashier  = await Cashier.findByPk(cashierId, 
-      {
-        include: [
-          {
-            model: Merchant,
-            attributes: ["id", "name"],
-          },
-        ],
-      }
-    );
+    // Vérifie que le Cashier existe et récupère les informations du Merchant
+    const cashier = await Cashier.findByPk(cashierId, {
+      include: [
+        {
+          model: Merchant,
+          attributes: ["id", "name"],
+        },
+      ],
+    });
+
     if (!cashier) {
       return res.status(404).json({
         status: "error",
@@ -211,7 +211,7 @@ const startSession = async (req, res) => {
       });
     }
 
-    // Vérifier si une session est déjà ouverte
+    // Vérifier si une session est déjà ouverte pour ce cashier
     const existingSession = await CashierSession.findOne({
       where: { cashierId, endTime: null },
     });
@@ -223,7 +223,7 @@ const startSession = async (req, res) => {
       });
     }
 
-    // Récupérer le solde de la caisse
+    // Récupérer le solde de la caisse associée au cashier
     const cashierBalance = await CashierBalance.findOne({
       where: { cashierId },
       attributes: ["amount"],
@@ -239,7 +239,7 @@ const startSession = async (req, res) => {
     const initialBalance = cashierBalance.amount;
     const merchantId = cashier.Merchant.id;
 
-    // Créer une nouvelle session avec le solde initial
+    // Créer une nouvelle session pour le cashier
     await CashierSession.create({
       merchantId,
       cashierId,
@@ -259,6 +259,7 @@ const startSession = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   create,
