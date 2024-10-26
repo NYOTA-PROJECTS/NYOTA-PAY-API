@@ -164,7 +164,7 @@ const allAciveCasher = async (req, res) => {
         id: cashier.id,
         name: cashier.name,
         merchant: cashier.Merchant.name,
-        minBalance: cashier.minBalance
+        balance: cashier.minBalance
       };
     });
 
