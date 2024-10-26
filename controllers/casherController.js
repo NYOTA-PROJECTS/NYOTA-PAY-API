@@ -13,7 +13,7 @@ const { appendErrorLog } = require("../utils/logging");
 const create = async (req, res) => {
   try {
     const token = req.headers.authorization;
-    const { merchantId, posId, name, balance } = req.body;
+    const { merchantId, posId, name, balance, amount } = req.body;
     if (!token) {
       return res
         .status(401)
@@ -24,6 +24,12 @@ const create = async (req, res) => {
       return res
         .status(400)
         .json({ status: "error", message: "Le nom est requis." });
+    }
+
+    if (!amount) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Le montant de la caisse est requis." });
     }
 
     if (!posId) {
@@ -74,11 +80,16 @@ const create = async (req, res) => {
       });
     }
 
-    await Cashier.create({
+    const cashier = await Cashier.create({
       merchantId,
       posId,
       name,
       minBalance: balance,
+    });
+
+    await CashierBalance.create({
+      cashierId: cashier.id,
+      amount: amount || 0,
     });
 
     return res.status(201).json({
