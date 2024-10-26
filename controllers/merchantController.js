@@ -114,7 +114,7 @@ const create = async (req, res) => {
       await PointOfSale.create(
         {
           merchantId: newMerchant.id,
-          urlLink: point.link,
+          name: point.name,
         },
         { transaction }
       );
@@ -247,7 +247,7 @@ const getAllInfos = async (req, res) => {
       include: [
         {
           model: PointOfSale,
-          attributes: ["urlLink"],
+          attributes: ["name"],
         },
         {
           model: MerchantBalance,
@@ -700,7 +700,7 @@ const merchantCashier = async (req, res) => {
         },
         {
           model: PointOfSale,
-          attributes: ["urlLink"],
+          attributes: ["name"],
         },
       ],
     });
@@ -719,7 +719,7 @@ const merchantCashier = async (req, res) => {
       name: cashRegister.name,
       minAmount: cashRegister.minBalance,
       amount: cashRegister.CashRegisterBalance?.amount || 0,
-      pos: cashRegister.PointOfSale?.urlLink || "N/A",
+      pos: cashRegister.PointOfSale?.name || "N/A",
     }));
 
     return res.status(200).json({

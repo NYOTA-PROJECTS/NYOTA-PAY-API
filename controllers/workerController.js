@@ -535,7 +535,7 @@ const getAllCashregisters = async (req, res) => {
           attributes: ["id", "name"],
           include: {
             model: PointOfSale,
-            attributes: ["id", "urlLink"],
+            attributes: ["id", "name"],
           },
         },
       },
@@ -569,7 +569,7 @@ const getAllCashregisters = async (req, res) => {
       merchantName: merchantName,
       posId: cashRegister.PointOfSale ? cashRegister.PointOfSale.id : null,
       posName: cashRegister.PointOfSale
-        ? cashRegister.PointOfSale.urlLink
+        ? cashRegister.PointOfSale.name
         : null,
     }));
 
@@ -914,7 +914,7 @@ const endSession = async (req, res) => {
             attributes: ["id", "name"],
             include: {
               model: PointOfSale,
-              attributes: ["id", "urlLink"],
+              attributes: ["id", "name"],
             },
           },
           {
@@ -1050,7 +1050,7 @@ const endSession = async (req, res) => {
           code: tx.code,
         })),
         cashRegister: cashRegister.name,  // Nom de la caisse
-        pointOfSale: pointOfSale.urlLink,  // Nom de la caisse
+        pointOfSale: pointOfSale.name,  // Nom de la caisse
       },
       message: "Session fermée et votre rapport sera envoyé sous peu.",
     });
@@ -1105,7 +1105,7 @@ const generateWorkerBalancePDF = async (worker, session, cashRegisterBalance, di
       doc.moveDown(2);
 
       doc.fontSize(14).text(`Marchand: ${worker.Merchant.name}`);
-      doc.text(`Point de vente: ${worker.Merchant.CashRegisters[0].PointOfSale.urlLink}`);
+      doc.text(`Point de vente: ${worker.Merchant.CashRegisters[0].PointOfSale.name}`);
       doc.text(`Caissier / Caissière: ${worker.name}`);
       doc.text(`Date et heure d’ouverture: ${formattedStartTime}`);
       doc.text(`Date et heure de fermeture: ${formattedEndTime}`);

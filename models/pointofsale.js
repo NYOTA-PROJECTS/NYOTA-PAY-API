@@ -17,7 +17,9 @@ module.exports = (sequelize, DataTypes) => {
   }
   PointOfSale.init({
     merchantId: DataTypes.INTEGER,
-    urlLink: DataTypes.STRING
+    name: DataTypes.STRING,
+    phone: DataTypes.STRING,
+    password: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'PointOfSale',

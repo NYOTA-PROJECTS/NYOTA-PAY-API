@@ -19,9 +19,18 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      urlLink: {
+      name: {
         type: Sequelize.STRING,
         allowNull: true
+      },
+      phone: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,

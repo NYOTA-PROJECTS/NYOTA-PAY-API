@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { Admin, Merchant, CashRegister, Worker, Customer } = require("../models");
+const { Admin, Merchant, CashRegister, Worker, Customer, PointOfSale } = require("../models");
 
 // Middleware pour vérifier le token JWT et l'utilisateur associé
 const verifyToken = async (req, res, next) => {
@@ -43,6 +43,8 @@ const verifyToken = async (req, res, next) => {
         user = await Worker.findByPk(decoded.id);
       } else if (decoded.role === "isCustomer") {
         user = await Customer.findByPk(decoded.id);
+      } else if (decoded.role === "isPointOfSell") {
+        user = await PointOfSale.findByPk(decoded.id);
       }
 
       if (!user) {

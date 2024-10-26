@@ -12,4 +12,7 @@ router.get("/list", verifyToken, isAdmin, pointofsellController.list);
 // DELETE
 router.delete("/delete", verifyToken, isAdmin, pointofsellController.destroy);
 
+// LOGIN
+router.post("/login", pointofsellController.login);
+
 module.exports = router

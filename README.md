@@ -190,10 +190,10 @@
   ],
   "pointsOfSell": [
     {
-      "urlLink": "http://example.com/point-of-sell-1"
+      "name": "http://example.com/point-of-sell-1"
     },
     {
-      "urlLink": "http://example.com/point-of-sell-2"
+      "name": "http://example.com/point-of-sell-2"
     }
   ]
 }
