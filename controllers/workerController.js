@@ -588,111 +588,7 @@ const getAllCashregisters = async (req, res) => {
   }
 };
 
-const startSession = async (req, res) => {
-  try {
-    const token = req.headers.authorization;
-    const { cashRegisterId } = req.body;
 
-    if (!cashRegisterId) {
-      return res
-        .status(400)
-        .json({
-          status: "error",
-          message: "Identifiant de caisse non fourni.",
-        });
-    }
-
-    // Récupérer le worker et vérifier s'il existe
-    if (!token) {
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token non fourni." });
-    }
-
-    // Vérifie si l'en-tête commence par "Bearer "
-    if (!token.startsWith("Bearer ")) {
-      return res.status(401).json({
-        status: "error",
-        message: "Format de token invalide.",
-      });
-    }
-
-    // Extrait le token en supprimant le préfixe "Bearer "
-    const customToken = token.substring(7);
-    let decodedToken;
-
-    try {
-      decodedToken = jwt.verify(customToken, process.env.JWT_SECRET);
-    } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res
-          .status(401)
-          .json({ status: "error", message: "TokenExpiredError" });
-      }
-      return res
-        .status(401)
-        .json({ status: "error", message: "Token invalide." });
-    }
-
-    const workerId = decodedToken.id;
-
-    const worker = await Worker.findByPk(workerId);
-    if (!worker) {
-      return res.status(404).json({
-        status: "error",
-        message: "Compte utilisateur non trouvé. Veuillez réessayer.",
-      });
-    }
-
-    // Vérifier si une session est déjà ouverte
-    const existingSession = await WorkerSession.findOne({
-      where: { workerId, endTime: null },
-    });
-
-    if (existingSession) {
-      return res.status(400).json({
-        status: "error",
-        message: "Une session est déjà ouverte pour ce compte utilisateur.",
-      });
-    }
-
-    // Récupérer le solde de la caisse
-    const cashRegister = await CashRegister.findByPk(cashRegisterId, {
-      include: [{
-        model: CashRegisterBalance,
-        required: true,
-      }]
-    });
-
-    if (!cashRegister) {
-      return res.status(404).json({
-        status: "error",
-        message: "Caisse non trouvée ou solde non disponible.",
-      });
-    }
-
-    const initialBalance = cashRegister.CashRegisterBalance.amount;
-
-    // Créer une nouvelle session avec le solde initial
-    await WorkerSession.create({
-      workerId,
-      cashRegisterId,
-      initialBalance,
-    });
-
-    return res.status(201).json({
-      status: "success",
-      message: "Session ouverte avec succès.",
-    });
-  } catch (error) {
-    console.error(`ERROR START SESSION: ${error}`);
-    appendErrorLog(`ERROR START SESSION: ${error}`);
-    return res.status(500).json({
-      status: "error",
-      message: "Une erreur s'est produite lors de la création de la session.",
-    });
-  }
-};
 
 const getCashBalance = async (req, res) => {
   try {
@@ -1391,7 +1287,6 @@ module.exports = {
   getAll,
   login,
   getAllCashregisters,
-  startSession,
   getCashBalance,
   endSession,
   getCashRegisterBalance,

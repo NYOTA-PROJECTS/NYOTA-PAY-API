@@ -6,7 +6,7 @@ const fs = require("fs-extra");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
-const { Cashier, Merchant, PointOfSale } = require("../models");
+const { Cashier, CashierSession, CashierBalance, Merchant, PointOfSale } = require("../models");
 const { sequelize } = require("../models");
 const { appendErrorLog } = require("../utils/logging");
 
@@ -185,7 +185,85 @@ const allAciveCasher = async (req, res) => {
 }
 
 
+const startSession = async (req, res) => {
+  try {
+    const { cashierId } = req.body;
+
+    if (!cashierId) {
+      return res.status(400).json({
+        status: "error",
+        message: "L'identifiant de l'utilisateur est requis.",
+      });
+    }
+
+    const cashier  = await Cashier.findByPk(cashierId, 
+      {
+        include: [
+          {
+            model: Merchant,
+            attributes: ["id", "name"],
+          },
+        ],
+      }
+    );
+    if (!cashier) {
+      return res.status(404).json({
+        status: "error",
+        message: "Compte utilisateur non trouvé. Veuillez réessayer.",
+      });
+    }
+
+    // Vérifier si une session est déjà ouverte
+    const existingSession = await CashierSession.findOne({
+      where: { cashierId, endTime: null },
+    });
+
+    if (existingSession) {
+      return res.status(400).json({
+        status: "error",
+        message: "Une session est déjà ouverte pour cette caisse.",
+      });
+    }
+
+    // Récupérer le solde de la caisse
+    const cashierBalance = await CashierBalance.findOne({
+      where: { cashierId },
+      attributes: ["amount"],
+    });
+
+    if (!cashierBalance) {
+      return res.status(404).json({
+        status: "error",
+        message: "Caisse non trouvée ou solde non disponible.",
+      });
+    }
+
+    const initialBalance = cashierBalance.amount;
+    const merchantId = cashier.Merchant.id;
+
+    // Créer une nouvelle session avec le solde initial
+    await CashierSession.create({
+      merchantId,
+      cashierId,
+      initialBalance,
+    });
+
+    return res.status(201).json({
+      status: "success",
+      message: "Session ouverte avec succès.",
+    });
+  } catch (error) {
+    console.error(`ERROR START SESSION: ${error}`);
+    appendErrorLog(`ERROR START SESSION: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Une erreur s'est produite lors de la création de la session.",
+    });
+  }
+};
+
 module.exports = {
   create,
-  allAciveCasher
+  allAciveCasher,
+  startSession
 };
