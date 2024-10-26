@@ -12,8 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       this.belongsTo(models.Merchant, { foreignKey: 'merchantId', onUpdate: 'CASCADE' });
-      this.belongsTo(models.PointOfSale, { foreignKey: 'merchantposId', onUpdate: 'CASCADE' });
-      this.hasMany(models.WorkerSession, { foreignKey: 'workerId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
+      this.belongsTo(models.PointOfSale, { foreignKey: 'posId', onUpdate: 'CASCADE' });
       this.hasOne(models.CashRegisterBalance, { foreignKey: 'cashregisterId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
       this.hasMany(models.Transaction, { foreignKey: 'cashRegisterId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }

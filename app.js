@@ -19,6 +19,7 @@ const pointofsellRoutes = require("./routes/pointofsellRoutes");
 const workerRoutes = require("./routes/workerRoutes");
 const customers = require("./routes/customerRoutes");
 const transactions = require("./routes/transactionRoutes");
+const cashers = require("./routes/casherRoutes");
 
 // Init express app
 const app = express();
@@ -97,6 +98,7 @@ app.use("/api/v1/pointofsell", pointofsellRoutes);
 app.use("/api/v1/worker", workerRoutes);
 app.use("/api/v1/customer", createUploadsCustomerFolder, customers);
 app.use("/api/v1/transaction", transactions);
+app.use("/api/v1/casher", cashers);
 
 // The error handler must be registered before any other error middleware and after all controllers
 Sentry.setupExpressErrorHandler(app);

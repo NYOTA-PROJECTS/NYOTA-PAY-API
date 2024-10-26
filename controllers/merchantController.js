@@ -19,7 +19,6 @@ const create = async (req, res) => {
   try {
     const { name, categoryId, admins, pointsOfSell } = req.body;
     const host = req.get("host");
-    //const picture = req.file;
 
     if (!name) {
       return res.status(400).json({
