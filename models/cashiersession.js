@@ -12,12 +12,12 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       this.belongsTo(models.Cashier, { foreignKey: 'cashierId' });
-      this.belongsTo(models.Worker, { foreignKey: 'workerId' });
+      this.belongsTo(models.Merchant, { foreignKey: 'merchantId' });
     }
   }
   CashierSession.init({
+    merchantId: DataTypes.INTEGER,
     cashierId: DataTypes.INTEGER,
-    workerId: DataTypes.INTEGER,
     initialBalance: DataTypes.DOUBLE,
     startTime: {
       type: DataTypes.DATE,

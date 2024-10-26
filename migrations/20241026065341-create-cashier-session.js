@@ -9,21 +9,21 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      cashierId: {
+      merchantId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Cashiers',
+          model: 'Merchants',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      workerId: {
+      cashierId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Workers',
+          model: 'Cashiers',
           key: 'id'
         },
         onUpdate: 'CASCADE',

@@ -154,7 +154,7 @@ const allAciveCasher = async (req, res) => {
       include: [
         {
           model: Merchant,
-          attributes: ["name"],
+          attributes: ["id", "name"],
         },
       ],
     });
@@ -162,6 +162,7 @@ const allAciveCasher = async (req, res) => {
     const responseFormat = cashierActive.map((cashier) => {
       return {
         id: cashier.id,
+        merchantId: cashier.Merchant.id,
         name: cashier.name,
         merchant: cashier.Merchant.name,
         balance: cashier.minBalance
