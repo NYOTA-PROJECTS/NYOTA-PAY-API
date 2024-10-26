@@ -2,24 +2,43 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('CashRegisterBalances', {
+    await queryInterface.createTable('Cashiers', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      cashregisterId: {
+      merchantId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'CashRegisters',
+          model: 'Merchants',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      amount: {
+      posId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'PointOfSales',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+      },
+      name: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      minBalance: {
         type: Sequelize.DOUBLE,
         allowNull: false,
         defaultValue: 0
@@ -36,6 +55,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('CashRegisterBalances');
+    await queryInterface.dropTable('Cashiers');
   }
 };

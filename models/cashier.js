@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Worker extends Model {
+  class Cashier extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -12,31 +12,20 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       this.belongsTo(models.Merchant, { foreignKey: 'merchantId', onUpdate: 'CASCADE' });
-      this.hasMany(models.CashierSession, { foreignKey: 'workerId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
-      this.hasMany(models.Transaction, { foreignKey: 'workerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.belongsTo(models.PointOfSale, { foreignKey: 'merchantposId', onUpdate: 'CASCADE' });
+      this.hasMany(models.Transaction, { foreignKey: 'cashierId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.hasOne(models.CashierBalance, { foreignKey: 'cashierId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }
   }
-  Worker.init({
+  Cashier.init({
     merchantId: DataTypes.INTEGER,
+    posId: DataTypes.INTEGER,
     isActive: DataTypes.BOOLEAN,
     name: DataTypes.STRING,
-    Identifier: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
-    },
-    password:{
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
-    }
+    minBalance: DataTypes.DOUBLE
   }, {
     sequelize,
-    modelName: 'Worker',
+    modelName: 'Cashier',
   });
-  return Worker;
+  return Cashier;
 };

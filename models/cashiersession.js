@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class WorkerSession extends Model {
+  class CashierSession extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,35 +11,23 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      this.belongsTo(models.Cashier, { foreignKey: 'cashierId' });
       this.belongsTo(models.Worker, { foreignKey: 'workerId' });
-      this.belongsTo(models.CashRegister, { foreignKey: 'cashRegisterId' });
     }
   }
-  WorkerSession.init({
-    workerId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    cashRegisterId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    initialBalance: {
-      type: DataTypes.DOUBLE,
-      allowNull: false,
-    },
+  CashierSession.init({
+    cashierId: DataTypes.INTEGER,
+    workerId: DataTypes.INTEGER,
+    initialBalance: DataTypes.DOUBLE,
     startTime: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-    endTime: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    }
+    endTime: DataTypes.DATE
   }, {
     sequelize,
-    modelName: 'WorkerSession',
+    modelName: 'CashierSession',
   });
-  return WorkerSession;
+  return CashierSession;
 };

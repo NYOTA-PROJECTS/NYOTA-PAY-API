@@ -2,41 +2,45 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('CashRegisters', {
+    await queryInterface.createTable('CashierSessions', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      merchantId: {
+      cashierId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Merchants',
+          model: 'Cashiers',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      merchantposId: {
+      workerId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'PointOfSales',
+          model: 'Workers',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      minBalance: {
+      initialBalance: {
         type: Sequelize.DOUBLE,
-        allowNull: false,
         defaultValue: 0
+      },
+      startTime: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      },
+      endTime: {
+        type: Sequelize.DATE,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,
@@ -50,6 +54,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('CashRegisters');
+    await queryInterface.dropTable('CashierSessions');
   }
 };
